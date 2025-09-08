@@ -1,4 +1,4 @@
-// Composition of layout components
+// Composition of layout components (galapagOS + seafoam)
 
 import { state, setCompositionImage, setSavedData } from './state.js';
 import { saveImage, getSaved } from './api.js';
@@ -21,7 +21,6 @@ function setupActions() {
   if (modalGen) modalGen.onclick = generate;
   if (modalCancel) modalCancel.onclick = () => {
     document.getElementById('preview-modal').style.display = 'none';
-    clearPeekReason('modal');
   };
   if (downloadBtn) downloadBtn.onclick = () => {
     const img = document.getElementById('generated-image');
@@ -137,7 +136,6 @@ export function showPreview() {
   const jsonEl = document.getElementById('preview-json');
   if (jsonEl) jsonEl.textContent = jsonStr;
   document.getElementById('preview-modal').style.display = 'flex';
-  assessPeekForModal();
 }
 
 export async function generate() {

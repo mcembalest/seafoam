@@ -1,4 +1,4 @@
-// Status icon (shows whether the backend is up and running)
+// Status icon for the server (galapagOS)
 
 export async function pingServer() {
   try {

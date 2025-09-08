@@ -1,25 +1,25 @@
-
+// Layout elements (galapagOS + seafoam)
 
 import { state } from './state.js';
 import { putUiConfig } from './api.js';
 
 export function initLayout() {
-  setupSavedPanelToggle();
+  setupLibraryToggle();
   setupPanelResizer();
   setupCanvasCards();
   setupBackgroundPicker();
 }
 
-function setupSavedPanelToggle() {
+function setupLibraryToggle() {
   const toggleBtn = document.getElementById('drawer-toggle') || document.getElementById('toggle-saved-btn');
   const panel = document.getElementById('side-panel') || document.getElementById('save-panel');
-  const savedOpen = localStorage.getItem('savedPanelOpen');
-  const savedHeight = localStorage.getItem('savedPanelHeight');
-  if (savedHeight) document.documentElement.style.setProperty('--saved-panel-height', savedHeight);
-  if (savedOpen === 'true') panel.classList.add('open');
+  const libraryOpen = localStorage.getItem('libraryOpen');
+  const libraryHeight = localStorage.getItem('libraryHeight');
+  if (libraryHeight) document.documentElement.style.setProperty('--library-height', libraryHeight);
+  if (libraryOpen === 'true') panel.classList.add('open');
   else if (state.uiConfig?.panel?.open) panel.classList.add('open');
-  const openPanel = () => { panel.classList.add('open'); localStorage.setItem('savedPanelOpen', 'true'); if (toggleBtn && toggleBtn.id === 'drawer-toggle') toggleBtn.textContent = 'Image + Instruction Library ▼'; };
-  const closePanel = () => { panel.classList.remove('open'); localStorage.setItem('savedPanelOpen', 'false'); if (toggleBtn && toggleBtn.id === 'drawer-toggle') toggleBtn.textContent = 'Image + Instruction Library ▲'; };
+  const openPanel = () => { panel.classList.add('open'); localStorage.setItem('libraryOpen', 'true'); if (toggleBtn && toggleBtn.id === 'drawer-toggle') toggleBtn.textContent = 'Image + Instruction Library ▼'; };
+  const closePanel = () => { panel.classList.remove('open'); localStorage.setItem('libraryOpen', 'false'); if (toggleBtn && toggleBtn.id === 'drawer-toggle') toggleBtn.textContent = 'Image + Instruction Library ▲'; };
   if (toggleBtn) toggleBtn.onclick = () => { if (panel.classList.contains('open')) closePanel(); else openPanel(); };
 }
 
@@ -31,19 +31,19 @@ function setupPanelResizer() {
     const dy = startY - (e.touches ? e.touches[0].clientY : e.clientY);
     let newVh = Math.max(18, Math.min(60, ((startHeight + dy) / window.innerHeight) * 100));
     const value = newVh.toFixed(1) + 'vh';
-    document.documentElement.style.setProperty('--saved-panel-height', value);
+    document.documentElement.style.setProperty('--library-height', value);
   };
   const onEnd = () => {
     document.removeEventListener('mousemove', onMove);
     document.removeEventListener('touchmove', onMove);
     document.removeEventListener('mouseup', onEnd);
     document.removeEventListener('touchend', onEnd);
-    const value = getComputedStyle(document.documentElement).getPropertyValue('--saved-panel-height').trim();
+    const value = getComputedStyle(document.documentElement).getPropertyValue('--library-height').trim();
     if (value) localStorage.setItem('savedPanelHeight', value);
   };
   const onStart = (e) => {
     startY = e.touches ? e.touches[0].clientY : e.clientY;
-    const current = getComputedStyle(document.documentElement).getPropertyValue('--saved-panel-height').trim();
+    const current = getComputedStyle(document.documentElement).getPropertyValue('--library-height').trim();
     const vh = current.endsWith('vh') ? parseFloat(current) : 28;
     startHeight = (vh / 100) * window.innerHeight;
     document.addEventListener('mousemove', onMove);
@@ -73,6 +73,7 @@ function setupCanvasCards() {
   const saveLayout = async () => {
     const toRect = (el) => ({ x: parseInt(el.style.left || '0'), y: parseInt(el.style.top || '0'), w: parseInt(el.style.width || el.offsetWidth), h: parseInt(el.style.height || el.offsetHeight) });
     const payload = { ...(state.uiConfig || {}), layout: { ...(state.uiConfig && state.uiConfig.layout ? state.uiConfig.layout : {}), cards: { composition: toRect(composition), output: toRect(output) } } };
+    console.log('saving layout', payload);
     try { await putUiConfig(payload); } catch (_) {}
   };
 

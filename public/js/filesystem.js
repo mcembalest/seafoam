@@ -1,4 +1,4 @@
-// Library of images and written text instructions
+// Library of images and written text instructions (galapagOS + seafoam)
 
 import { state, setSavedData, setUiConfig, subscribe } from './state.js';
 import { saveImage, saveText, deleteImage, deleteText, putUiConfig } from './api.js';

@@ -1,4 +1,4 @@
-// Seafoam frontend code
+// Frontend code (galapagOS + seafoam)
 
 import { getSaved, getUiConfig } from './api.js';
 import { setSavedData, setUiConfig } from './state.js';

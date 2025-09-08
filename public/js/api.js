@@ -1,4 +1,4 @@
-// API utilities for saved items and UI config
+// API utilities for saved items and UI config (galapagOS + seafoam)
 
 export async function getSaved() {
   const res = await fetch('/api/saved');

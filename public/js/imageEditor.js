@@ -1,4 +1,4 @@
-// Image editing modal
+// Image editing modal (seafoam)
 
 import { patchImage } from './api.js';
 import { updateImageInSaved } from './state.js';

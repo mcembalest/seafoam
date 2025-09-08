@@ -1,4 +1,4 @@
-// Text instruction editing modal
+// Text instruction editing modal (seafoam)
 
 import { patchText } from './api.js';
 import { updateTextInSaved } from './state.js';
