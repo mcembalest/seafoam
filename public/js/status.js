@@ -1,0 +1,26 @@
+export async function pingServer() {
+    try {
+        const res = await fetch('/health');
+        const ok = res.ok;
+        setServerStatus(ok);
+        return ok;
+    } catch (_) {
+        setServerStatus(false);
+        return false;
+    }
+}
+
+export function setServerStatus(isOnline) {
+    const pill = document.getElementById('server-status');
+    if (!pill) return;
+    pill.textContent = isOnline ? 'Online' : 'Offline';
+    pill.classList.toggle('status-online', !!isOnline);
+    pill.classList.toggle('status-offline', !isOnline);
+}
+
+export function startStatusPolling(intervalMs = 10000) {
+    // kick once immediately, then poll
+    pingServer();
+    return setInterval(pingServer, intervalMs);
+}
+

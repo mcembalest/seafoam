@@ -4,71 +4,80 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Seafoam</title>
+    <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Seafoam</h1>
-            <p>Bring your vision to life</p>
+            <div style="display: flex; align-items: center; gap: 12px; height: 64px;">
+                <img src="assets/Seafoam.png" alt="Seafoam" class="logo" style="width: 64px; height: 64px;">
+                <h1>Seafoam</h1>
+                <span id="server-status" class="status-pill status-offline" title="Backend connection status">Offline</span>
+            </div>
+            <div style="margin-top: 8px; display:flex; gap:8px; align-items:center;">
+                <label for="bg-input" style="font-size:12px; color:#5f6368;">Background</label>
+                <input id="bg-input" type="file" accept="image/*" style="font-size:12px;">
+            </div>
         </header>
 
-        <div class="main-content">
-            <div class="input-section">
-                <div class="tab-container">
-                    <button class="tab-btn active" data-tab="text-to-image">Text to Image</button>
-                    <button class="tab-btn" data-tab="image-edit">Text + Image to Image</button>
+        <div id="side-panel" class="filesystem-section side-panel">
+                <div id="panel-grabber" class="panel-grabber" aria-label="Resize saved panel"></div>
+                <div class="panel-body">
+                    <div class="saved-images">
+                        <h3>Saved Images</h3>
+                        <div id="saved-images-grid" class="saved-grid"></div>
+                        <input type="file" id="add-image" accept="image/*" multiple style="display: none;">
+                        <button id="add-image-btn" class="add-btn">+ Add Images</button>
+                    </div>
+                    <div class="saved-texts">
+                        <h3>Text Snippets</h3>
+                        <div id="saved-texts-list" class="saved-list"></div>
+                        <button id="add-text-btn" class="add-btn">+ Add Text</button>
+                    </div>
                 </div>
+        </div>
+        
 
-                <div id="text-to-image" class="tab-content active">
+        <div class="main-content">
+            <div id="canvas" class="canvas">
+            
+            <div class="composition-section canvas-card" data-card="composition">
+                <div class="composition-area">
                     <div class="form-group">
-                        <label for="prompt">Image Prompt</label>
-                        <textarea id="prompt" placeholder="Describe the image you want to generate in detail...">A photorealistic close-up portrait of a golden retriever wearing sunglasses.</textarea>
+                        <label>Composition Text</label>
+                        <textarea id="composition-text" placeholder="Drag text snippets here or write your prompt..."></textarea>
                     </div>
                     
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="aspect-ratio">Aspect Ratio</label>
-                            <select id="aspect-ratio">
-                                <option value="1:1">Square (1:1)</option>
-                                <option value="16:9">Widescreen (16:9)</option>
-                                <option value="9:16">Portrait (9:16)</option>
-                                <option value="4:3">Standard (4:3)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <button id="generate-btn" class="generate-btn">
-                        <span class="btn-text">Generate</span>
-                        <span class="btn-loading" style="display: none;">Generating...</span>
-                    </button>
-                </div>
-
-                <div id="image-edit" class="tab-content">
                     <div class="form-group">
-                        <label for="image-upload">Upload Image</label>
-                        <div class="file-upload-area" id="file-upload-area">
-                            <input type="file" id="image-upload" accept="image/*" style="display: none;">
-                            <div class="upload-placeholder">
-                                <span>📷</span>
-                                <p>Click to upload or drag & drop an image</p>
+                        <label>Image Slots</label>
+                        <div id="image-slots" class="image-slots">
+                            <div class="image-slot" data-slot="0">
+                                <span>Drop image here</span>
+                            </div>
+                            <div class="image-slot" data-slot="1">
+                                <span>Drop image here</span>
+                            </div>
+                            <div class="image-slot" data-slot="2">
+                                <span>Drop image here</span>
                             </div>
                         </div>
+                        <input type="file" id="slot-file-input" accept="image/*" style="display: none;">
                     </div>
 
-                    <div class="form-group">
-                        <label for="edit-prompt">Text Instructions</label>
-                        <textarea id="edit-prompt" placeholder="Describe how you want to edit the image...">Make it funnier</textarea>
+                    <div class="action-buttons">
+                        <button id="preview-btn" class="preview-btn">Preview Prompt</button>
+                        <button id="generate-btn" class="generate-btn">
+                            <span class="btn-text">Generate</span>
+                            <span class="btn-loading" style="display: none;">Generating...</span>
+                        </button>
                     </div>
-
-                    <button id="edit-btn" class="generate-btn" disabled>
-                        <span class="btn-text">Generate</span>
-                        <span class="btn-loading" style="display: none;">Processing...</span>
-                    </button>
                 </div>
+                <div class="card-resize-handle" data-card="composition"></div>
             </div>
 
-            <div class="output-section">
+            <div class="output-section canvas-card" data-card="output">
+                <div class="card-header card-drag-handle">Output</div>
                 <div class="result-container">
                     <div id="image-placeholder" class="image-placeholder">
                         <div class="placeholder-content">
@@ -80,15 +89,47 @@
                         <img id="generated-image" alt="Generated image">
                         <div class="image-actions">
                             <button id="download-btn" class="action-btn">Download</button>
+                            <button id="save-btn" class="action-btn">Save</button>
                         </div>
                     </div>
                 </div>
+                <div class="card-resize-handle" data-card="output"></div>
+            </div>
+            
+            </div>
+        </div>
 
-                <div id="error-message" class="error-message" style="display: none;"></div>
+        <button id="drawer-toggle" class="drawer-toggle" aria-label="Toggle Saved">▲</button>
+
+        <div id="preview-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h3>Gemini API Preview</h3>
+                <div class="preview-content">
+                    <div class="form-group">
+                        <label>Request JSON:</label>
+                        <pre id="preview-json" class="code-block"></pre>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button id="modal-cancel">Cancel</button>
+                    <button id="modal-generate" class="generate-btn">Generate</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="text-input-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h3>Add Text Snippet</h3>
+                <textarea id="new-text-input" placeholder="Enter your text snippet..."></textarea>
+                <div class="modal-actions">
+                    <button id="text-cancel">Cancel</button>
+                    <button id="text-save">Save</button>
+                </div>
             </div>
         </div>
     </div>
 
+    <script type="module" src="js/main.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

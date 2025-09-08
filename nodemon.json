@@ -1,0 +1,8 @@
+{
+  "ignore": [
+    "data/saved_config.json",
+    "data/saved_config.tmp.json",
+    "uploads/*"
+  ]
+}
+
