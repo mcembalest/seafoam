@@ -1,4 +1,4 @@
-// Server status: ping + pill updates
+// Status icon (shows whether the backend is up and running)
 
 export async function pingServer() {
   try {
@@ -26,7 +26,6 @@ export function setServerStatus(isOnline) {
 }
 
 export function startStatusPolling(intervalMs = 10000) {
-  // kick once immediately, then poll
   pingServer();
   return setInterval(pingServer, intervalMs);
 }

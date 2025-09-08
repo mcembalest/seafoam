@@ -1,44 +1,8 @@
-import { patchText, patchImage } from './api.js';
-import { updateTextInSaved, updateImageInSaved } from './state.js';
-import { assessPeekForModal, clearPeekReason } from './layout.js';
+// Image editing modal
 
-// Text editor modal
-export function openTextEditor(item) {
-  const modal = document.getElementById('text-editor-modal');
-  const nameInput = document.getElementById('edit-text-name');
-  const bodyTextarea = document.getElementById('edit-text-body');
-  const saveBtn = document.getElementById('edit-text-save');
-  const cancelBtn = document.getElementById('edit-text-cancel');
-  nameInput.value = item.name || '';
-  bodyTextarea.value = item.text || '';
-  modal.style.display = 'flex';
-  assessPeekForModal();
+import { patchImage } from './api.js';
+import { updateImageInSaved } from './state.js';
 
-  const onKey = (e) => {
-    if (e.key === 'Escape') doCancel();
-    if (e.key === 'Enter' && (e.target === nameInput || e.metaKey || e.ctrlKey)) doSave();
-  };
-  const doSave = async () => {
-    const payload = { name: nameInput.value.trim(), text: bodyTextarea.value };
-    await patchText(item.id, payload);
-    updateTextInSaved(item.id, payload);
-    cleanup();
-    clearPeekReason('modal');
-  };
-  const doCancel = () => { cleanup(); clearPeekReason('modal'); };
-  function cleanup() {
-    modal.style.display = 'none';
-    document.removeEventListener('keydown', onKey);
-    saveBtn.onclick = null;
-    cancelBtn.onclick = null;
-  }
-  saveBtn.onclick = doSave;
-  cancelBtn.onclick = doCancel;
-  document.addEventListener('keydown', onKey);
-  setTimeout(() => nameInput.focus(), 0);
-}
-
-// Simple cropper state (module local)
 let cropState = { active: false, start: null, rect: null, image: null, mimeType: null };
 
 export function openImageEditor(item, onAfterSave) {
@@ -63,7 +27,6 @@ export function openImageEditor(item, onAfterSave) {
   cropState.image.src = `data:${item.mimeType};base64,${item.data}`;
   overlay.style.display = 'none';
   modal.style.display = 'flex';
-  assessPeekForModal();
 
   const onKey = (e) => {
     if (e.key === 'Escape') doCancel();
@@ -145,10 +108,9 @@ export function openImageEditor(item, onAfterSave) {
     await patchImage(item.id, payload);
     updateImageInSaved(item.id, { name: payload.name, caption: payload.caption, data: base64, mimeType: cropState.mimeType });
         cleanup();
-        clearPeekReason('modal');
     if (typeof onAfterSave === 'function') onAfterSave(item.id);
   };
-  const doCancel = () => { cleanup(); clearPeekReason('modal'); };
+  const doCancel = () => { cleanup(); };
   function cleanup() {
     modal.style.display = 'none';
     document.removeEventListener('keydown', onKey);

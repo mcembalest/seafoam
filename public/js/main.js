@@ -1,3 +1,5 @@
+// Seafoam frontend code
+
 import { getSaved, getUiConfig } from './api.js';
 import { setSavedData, setUiConfig } from './state.js';
 import { startStatusPolling } from './status.js';
@@ -29,4 +31,3 @@ async function bootstrap() {
 }
 
 document.addEventListener('DOMContentLoaded', bootstrap);
-

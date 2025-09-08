@@ -1,4 +1,4 @@
-// Lightweight app state with pub/sub
+// Lightweight app state with pub/sub (galapagOS)
 
 const listeners = new Map();
 

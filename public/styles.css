@@ -288,10 +288,6 @@ header p {
     -webkit-user-drag: none;
 }
 
-/* removed inline rename inputs; editing happens in modals */
-
-/* Legacy text list styles replaced by list rows */
-
 .add-btn {
     width: 100%;
     padding: 8px;

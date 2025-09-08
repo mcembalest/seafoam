@@ -1,6 +1,7 @@
+// Composition of layout components
+
 import { state, setCompositionImage, setSavedData } from './state.js';
 import { saveImage, getSaved } from './api.js';
-import { assessPeekForModal, clearPeekReason } from './layout.js';
 
 export function initComposition() {
   setupDragAndDrop();
@@ -36,7 +37,6 @@ function setupActions() {
       await saveImage({ data: base64, mimeType });
       const fresh = await getSaved();
       setSavedData(fresh);
-      // Also reflect in UI grid (filesystem subscribes to savedData changes)
     }
   };
 }
@@ -112,7 +112,6 @@ function setupSlotClickUpload() {
       const file = e.target.files && e.target.files[0];
       if (!file || activeSlotIndex === null) { e.target.value = ''; return; }
       const base64 = await readAsBase64(file);
-      // Save to saved images
       const resp = await fetch('/api/save-image', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ data: base64, mimeType: file.type, name: file.name.replace(/\.[^/.]+$/, '') })
@@ -147,7 +146,6 @@ export async function generate() {
   const activeImages = state.compositionImages.filter(img => img !== null);
   if (!text.trim()) return;
   document.getElementById('preview-modal').style.display = 'none';
-  clearPeekReason('modal');
   setLoading('generate-btn', true);
   const formData = new FormData();
   formData.append('prompt', text);

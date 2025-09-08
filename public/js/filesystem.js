@@ -1,10 +1,12 @@
+// Library of images and written text instructions
+
 import { state, setSavedData, setUiConfig, subscribe } from './state.js';
 import { saveImage, saveText, deleteImage, deleteText, putUiConfig } from './api.js';
-import { openTextEditor, openImageEditor } from './modals.js';
+import { openTextEditor } from './textEditor.js';
+import { openImageEditor } from './imageEditor.js';
 import { updateSlotsUsing } from './composition.js';
 
 export function initFilesystem() {
-  // Initial render and subscribe to changes
   renderSavedItems();
   subscribe('savedData:change', renderSavedItems);
   setupAdders();
@@ -67,7 +69,6 @@ function renderSavedItems() {
 
   const mode = getViewMode();
   if (mode === 'grid') {
-    // Grid (Icons) view
     imagesGrid.classList.add('saved-grid');
     textsList.classList.add('saved-grid');
     const tiles = state.savedData.images.map(img => `
@@ -86,7 +87,6 @@ function renderSavedItems() {
       </div>`;
     imagesGrid.innerHTML = tiles + addTile;
 
-    // Texts as tiles
     const textTiles = state.savedData.texts.map(txt => `
       <div class="saved-tile" draggable="true" data-id="${txt.id}" data-type="text">
         <div class="grid-actions"><button class="icon-btn delete-btn" title="Delete" data-type="text" data-id="${txt.id}">✕</button></div>
@@ -101,8 +101,7 @@ function renderSavedItems() {
         <div class="tile-body"></div>
       </div>`;
     textsList.innerHTML = textTiles + addTextTile;
-  } else {
-    // List view
+  } else { // assumes that List view is the alternative to Grid view
     imagesGrid.classList.remove('saved-grid');
     textsList.classList.remove('saved-grid');
     imagesGrid.innerHTML = `
@@ -130,8 +129,6 @@ function renderSavedItems() {
         </div>
       </div>`;
   }
-
-  // Click handlers are delegated; no per-item binding needed
   attachItemEditors();
   attachAddHandlers();
 }
@@ -246,7 +243,7 @@ function attachAddHandlers() {
       document.getElementById('text-input-modal').style.display = 'flex';
     };
   } else {
-    // Buttons are the existing add buttons, now positioned at top-right by CSS
+    // Buttons are the existing add buttons, now positioned at top-right by CSS (??? IS THIS A TODO OR IS THIS A COMMENT OF EXISTING BEHAVIOR???)
   }
 }
 
