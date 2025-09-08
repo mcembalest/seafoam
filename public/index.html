@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seafoam</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Seafoam</h1>
+            <p>Bring your vision to life</p>
+        </header>
+
+        <div class="main-content">
+            <div class="input-section">
+                <div class="tab-container">
+                    <button class="tab-btn active" data-tab="text-to-image">Text to Image</button>
+                    <button class="tab-btn" data-tab="image-edit">Text + Image to Image</button>
+                </div>
+
+                <div id="text-to-image" class="tab-content active">
+                    <div class="form-group">
+                        <label for="prompt">Image Prompt</label>
+                        <textarea id="prompt" placeholder="Describe the image you want to generate in detail...">A photorealistic close-up portrait of a golden retriever wearing sunglasses.</textarea>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="aspect-ratio">Aspect Ratio</label>
+                            <select id="aspect-ratio">
+                                <option value="1:1">Square (1:1)</option>
+                                <option value="16:9">Widescreen (16:9)</option>
+                                <option value="9:16">Portrait (9:16)</option>
+                                <option value="4:3">Standard (4:3)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button id="generate-btn" class="generate-btn">
+                        <span class="btn-text">Generate</span>
+                        <span class="btn-loading" style="display: none;">Generating...</span>
+                    </button>
+                </div>
+
+                <div id="image-edit" class="tab-content">
+                    <div class="form-group">
+                        <label for="image-upload">Upload Image</label>
+                        <div class="file-upload-area" id="file-upload-area">
+                            <input type="file" id="image-upload" accept="image/*" style="display: none;">
+                            <div class="upload-placeholder">
+                                <span>📷</span>
+                                <p>Click to upload or drag & drop an image</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-prompt">Text Instructions</label>
+                        <textarea id="edit-prompt" placeholder="Describe how you want to edit the image...">Make it funnier</textarea>
+                    </div>
+
+                    <button id="edit-btn" class="generate-btn" disabled>
+                        <span class="btn-text">Generate</span>
+                        <span class="btn-loading" style="display: none;">Processing...</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="output-section">
+                <div class="result-container">
+                    <div id="image-placeholder" class="image-placeholder">
+                        <div class="placeholder-content">
+                            <span>🖼️</span>
+                            <p>Images will appear here</p>
+                        </div>
+                    </div>
+                    <div id="image-result" class="image-result" style="display: none;">
+                        <img id="generated-image" alt="Generated image">
+                        <div class="image-actions">
+                            <button id="download-btn" class="action-btn">Download</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="error-message" class="error-message" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
