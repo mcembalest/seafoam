@@ -1,5 +1,5 @@
-import { state, setSavedData, subscribe } from './state.js';
-import { saveImage, saveText, deleteImage, deleteText, patchImage, patchText } from './api.js';
+import { state, setSavedData, setUiConfig, subscribe } from './state.js';
+import { saveImage, saveText, deleteImage, deleteText, putUiConfig } from './api.js';
 import { openTextEditor, openImageEditor } from './modals.js';
 import { updateSlotsUsing } from './composition.js';
 
@@ -8,6 +8,56 @@ export function initFilesystem() {
   renderSavedItems();
   subscribe('savedData:change', renderSavedItems);
   setupAdders();
+  setupViewToggle();
+  applyInitialViewMode();
+  setupDelegatedDeletion();
+}
+
+function getViewMode() {
+  const cfg = state.uiConfig;
+  const mode = (cfg && cfg.view && cfg.view.imagesMode) || localStorage.getItem('savedViewMode') || 'grid';
+  return mode === 'list' ? 'list' : 'grid';
+}
+
+function setViewMode(mode) {
+  const next = mode === 'list' ? 'list' : 'grid';
+  localStorage.setItem('savedViewMode', next);
+  const newCfg = {
+    ...(state.uiConfig || {}),
+    view: {
+      ...(state.uiConfig && state.uiConfig.view ? state.uiConfig.view : {}),
+      imagesMode: next,
+      textsMode: next
+    }
+  };
+  setUiConfig(newCfg);
+  try { putUiConfig(newCfg); } catch (_) {}
+}
+
+function applyInitialViewMode() {
+  const mode = getViewMode();
+  const panel = document.getElementById('save-panel') || document.getElementById('side-panel');
+  panel?.classList.toggle('list-view', mode === 'list');
+  const toggle = document.getElementById('saved-view-toggle');
+  if (toggle) {
+    toggle.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.mode === mode));
+  }
+  renderSavedItems();
+}
+
+function setupViewToggle() {
+  const toggle = document.getElementById('saved-view-toggle');
+  if (!toggle) return;
+  toggle.addEventListener('click', (e) => {
+    const btn = e.target.closest('.toggle-btn');
+    if (!btn) return;
+    const mode = btn.dataset.mode;
+    setViewMode(mode);
+    const panel = document.getElementById('save-panel') || document.getElementById('side-panel');
+    panel?.classList.toggle('list-view', mode === 'list');
+    toggle.querySelectorAll('.toggle-btn').forEach(b => b.classList.toggle('active', b === btn));
+    renderSavedItems();
+  });
 }
 
 function renderSavedItems() {
@@ -15,87 +65,118 @@ function renderSavedItems() {
   const textsList = document.getElementById('saved-texts-list');
   if (!imagesGrid || !textsList) return;
 
-  imagesGrid.innerHTML = state.savedData.images.map(img => `
-    <div class="saved-item" draggable="true" data-id="${img.id}" data-type="image">
-      <div class="grid-actions">
-        <button class="icon-btn delete-btn" title="Delete" data-type="image" data-id="${img.id}">✕</button>
-      </div>
-      <img src="data:${img.mimeType};base64,${img.data}" alt="Saved">
-      <input class="saved-name-input" data-type="image" data-id="${img.id}" value="${img.name || ''}" />
-      ${img.caption ? `<div class="saved-caption">${(img.caption || '').substring(0,50)}${(img.caption||'').length>50?'...':''}</div>` : ''}
-    </div>
-  `).join('');
-
-  textsList.innerHTML = state.savedData.texts.map(txt => `
-    <div class="saved-text-item" draggable="true" data-id="${txt.id}" data-type="text">
-      <div style="display:flex; justify-content: space-between; gap:6px;">
-        <div class="saved-text-name-row" style="flex:1;">
-          <input class="saved-name-input" data-type="text" data-id="${txt.id}" value="${txt.name || ''}" />
+  const mode = getViewMode();
+  if (mode === 'grid') {
+    // Grid (Icons) view
+    imagesGrid.classList.add('saved-grid');
+    textsList.classList.add('saved-grid');
+    const tiles = state.savedData.images.map(img => `
+      <div class="saved-tile" draggable="true" data-id="${img.id}" data-type="image">
+        <div class="grid-actions"><button class="icon-btn delete-btn" title="Delete" data-type="image" data-id="${img.id}">✕</button></div>
+        <div class="tile-thumb"><img src="data:${img.mimeType};base64,${img.data}" alt="Saved"></div>
+        <div class="tile-body">
+          <div class="tile-name" title="${img.name || ''}">${img.name || ''}</div>
+          ${img.caption ? `<div class=\"tile-caption\">${(img.caption || '').substring(0,50)}${(img.caption||'').length>50?'...':''}</div>` : '<div class=\"tile-caption\"></div>'}
         </div>
-        <div class="grid-actions" style="position:static; opacity:1;">
-          <button class="icon-btn delete-btn" title="Delete" data-type="text" data-id="${txt.id}">✕</button>
-        </div>
-      </div>
-      <div class="saved-text-preview">${txt.text.substring(0, 50)}${txt.text.length > 50 ? '...' : ''}</div>
-    </div>
-  `).join('');
+      </div>`).join('');
+    const addTile = `
+      <div class="saved-tile" data-action="add-image">
+        <div class="tile-thumb"><div class="add-tile"><div class="add-icon">➕</div><div class="add-label">Upload Image</div></div></div>
+        <div class="tile-body"></div>
+      </div>`;
+    imagesGrid.innerHTML = tiles + addTile;
 
-  attachNameEditors();
-  attachItemActionHandlers();
+    // Texts as tiles
+    const textTiles = state.savedData.texts.map(txt => `
+      <div class="saved-tile" draggable="true" data-id="${txt.id}" data-type="text">
+        <div class="grid-actions"><button class="icon-btn delete-btn" title="Delete" data-type="text" data-id="${txt.id}">✕</button></div>
+        <div class="tile-body">
+          <div class="tile-name" title="${txt.name || ''}">${txt.name || ''}</div>
+          <div class="tile-preview">${txt.text.substring(0, 80)}${txt.text.length > 80 ? '...' : ''}</div>
+        </div>
+      </div>`).join('');
+    const addTextTile = `
+      <div class="saved-tile" data-action="add-text">
+        <div class="tile-thumb"><div class="add-tile"><div class="add-icon">➕</div><div class="add-label">Write Instruction</div></div></div>
+        <div class="tile-body"></div>
+      </div>`;
+    textsList.innerHTML = textTiles + addTextTile;
+  } else {
+    // List view
+    imagesGrid.classList.remove('saved-grid');
+    textsList.classList.remove('saved-grid');
+    imagesGrid.innerHTML = `
+      <div class="list-section">
+        <div class="list-rows">
+          ${state.savedData.images.map(img => `
+            <div class="list-row" draggable="true" data-id="${img.id}" data-type="image">
+              <div class="row-thumb"><img src="data:${img.mimeType};base64,${img.data}" alt="Saved"></div>
+              <div class="row-name" title="${img.name || ''}">${img.name || ''}</div>
+              <div class="row-actions"><button class="icon-btn delete-btn" title="Delete" data-type="image" data-id="${img.id}">✕</button></div>
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+    textsList.innerHTML = `
+      <div class="list-section">
+        <div class="list-rows">
+          ${state.savedData.texts.map(txt => `
+            <div class="list-row" draggable="true" data-id="${txt.id}" data-type="text">
+              <div class="row-thumb text">📄</div>
+              <div class="row-name" title="${txt.name || ''}">${txt.name || ''}</div>
+              <div class="row-actions"><button class="icon-btn delete-btn" title="Delete" data-type="text" data-id="${txt.id}">✕</button></div>
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+  }
+
+  // Click handlers are delegated; no per-item binding needed
   attachItemEditors();
+  attachAddHandlers();
 }
 
-function attachNameEditors() {
-  const inputs = document.querySelectorAll('.saved-name-input');
-  inputs.forEach(input => {
-    input.onchange = async (e) => {
-      const id = e.target.getAttribute('data-id');
-      const type = e.target.getAttribute('data-type');
-      const name = e.target.value.trim();
-      if (type === 'image') {
-        await patchImage(id, { name });
-        const item = state.savedData.images.find(i => i.id === id);
-        if (item) item.name = name || item.name;
-      } else if (type === 'text') {
-        await patchText(id, { name });
-        const item = state.savedData.texts.find(t => t.id === id);
-        if (item) item.name = name || item.name;
-      }
-    };
-  });
-}
-
-function attachItemActionHandlers() {
-  document.querySelectorAll('.delete-btn').forEach(btn => {
-    btn.onclick = async (e) => {
-      e.stopPropagation();
-      const id = e.currentTarget.getAttribute('data-id');
-      const type = e.currentTarget.getAttribute('data-type');
+function setupDelegatedDeletion() {
+  const panel = document.getElementById('save-panel') || document.getElementById('side-panel');
+  if (!panel || panel.__hasDeleteDelegation) return;
+  panel.__hasDeleteDelegation = true;
+  panel.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.delete-btn');
+    if (!btn || !panel.contains(btn)) return;
+    e.stopPropagation();
+    const id = btn.getAttribute('data-id');
+    const type = btn.getAttribute('data-type');
+    try {
       if (type === 'image') {
         await deleteImage(id);
         state.savedData.images = state.savedData.images.filter(i => i.id !== id);
-        updateSlotsUsing(id); // clear visuals if needed
-      } else {
+        updateSlotsUsing(id);
+      } else if (type === 'text') {
         await deleteText(id);
         state.savedData.texts = state.savedData.texts.filter(t => t.id !== id);
       }
-      renderSavedItems();
-    };
+    } finally {
+      // Refresh from server for authoritative state
+      const fresh = await (await fetch('/api/saved')).json();
+      setSavedData(fresh);
+    }
   });
 }
 
 function attachItemEditors() {
-  document.querySelectorAll('.saved-text-item').forEach(el => {
+  document.querySelectorAll('[data-type="text"]').forEach(el => {
     el.onclick = (e) => {
-      if (e.target.closest('.icon-btn') || e.target.closest('.saved-name-input')) return;
+      if (!el.getAttribute('data-id')) return; // ignore add tiles
+      if (e.target.closest('.icon-btn')) return;
       const id = el.getAttribute('data-id');
       const item = state.savedData.texts.find(t => t.id === id);
       if (item) openTextEditor(item);
     };
   });
-  document.querySelectorAll('.saved-item').forEach(el => {
+  document.querySelectorAll('[data-type="image"]').forEach(el => {
     el.onclick = (e) => {
-      if (e.target.closest('.icon-btn') || e.target.closest('.saved-name-input')) return;
+      if (!el.getAttribute('data-id')) return; // ignore add tiles
+      if (e.target.closest('.icon-btn')) return;
       const id = el.getAttribute('data-id');
       const item = state.savedData.images.find(i => i.id === id);
       if (item) openImageEditor(item, updateSlotsUsing);
@@ -117,7 +198,6 @@ function setupAdders() {
       e.target.value = '';
       const fresh = await (await fetch('/api/saved')).json();
       setSavedData(fresh);
-      renderSavedItems();
     };
   }
 
@@ -133,19 +213,40 @@ function setupAdders() {
   if (textSave && textCancel) {
     textSave.onclick = async () => {
       const textarea = document.getElementById('new-text-input');
+      const titleInput = document.getElementById('new-text-title');
       const text = textarea.value.trim();
+      const title = (titleInput?.value || '').trim();
       if (text) {
-        await saveText({ text, name: `Snippet ${state.savedData.texts.length + 1}`, size: text.length, createdAt: Date.now() });
+        const defaultName = `Instruction ${state.savedData.texts.length + 1}`;
+        await saveText({ text, name: title || defaultName, size: text.length, createdAt: Date.now() });
         textarea.value = '';
+        if (titleInput) titleInput.value = '';
         document.getElementById('text-input-modal').style.display = 'none';
         const fresh = await (await fetch('/api/saved')).json();
         setSavedData(fresh);
-        renderSavedItems();
       }
     };
     textCancel.onclick = () => {
+      const textarea = document.getElementById('new-text-input');
+      const titleInput = document.getElementById('new-text-title');
+      if (textarea) textarea.value = '';
+      if (titleInput) titleInput.value = '';
       document.getElementById('text-input-modal').style.display = 'none';
     };
+  }
+}
+
+function attachAddHandlers() {
+  const mode = getViewMode();
+  if (mode === 'grid') {
+    const addImageTile = document.querySelector('.saved-tile[data-action="add-image"]');
+    const addTextTile = document.querySelector('.saved-tile[data-action="add-text"]');
+    if (addImageTile) addImageTile.onclick = () => document.getElementById('add-image')?.click();
+    if (addTextTile) addTextTile.onclick = () => {
+      document.getElementById('text-input-modal').style.display = 'flex';
+    };
+  } else {
+    // Buttons are the existing add buttons, now positioned at top-right by CSS
   }
 }
 

@@ -6,6 +6,7 @@ export function initLayout() {
   setupPanelResizer();
   setupCanvasCards();
   setupBackgroundPicker();
+  initAutoPanelBehavior();
 }
 
 function setupSavedPanelToggle() {
@@ -77,9 +78,9 @@ function setupCanvasCards() {
   const enableDrag = (card) => {
     const handle = card.querySelector('.card-drag-handle') || card;
     let dragging = false; let startX = 0; let startY = 0; let baseLeft = 0; let baseTop = 0;
-    const onMove = (e) => { if (!dragging) return; const x = e.touches ? e.touches[0].clientX : e.clientX; const y = e.touches ? e.touches[0].clientY : e.clientY; const dx = x - startX; const dy = y - startY; card.style.left = baseLeft + dx + 'px'; card.style.top = baseTop + dy + 'px'; };
-    const onEnd = () => { if (!dragging) return; dragging = false; document.removeEventListener('mousemove', onMove); document.removeEventListener('touchmove', onMove); document.removeEventListener('mouseup', onEnd); document.removeEventListener('touchend', onEnd); saveLayout(); };
-    const onStart = (e) => { if ((e.target && e.target.closest('.card-resize-handle')) || (e.button && e.button !== 0)) return; dragging = true; startX = e.touches ? e.touches[0].clientX : e.clientX; startY = e.touches ? e.touches[0].clientY : e.clientY; baseLeft = parseInt(card.style.left || '0'); baseTop = parseInt(card.style.top || '0'); document.addEventListener('mousemove', onMove); document.addEventListener('touchmove', onMove, { passive: false }); document.addEventListener('mouseup', onEnd); document.addEventListener('touchend', onEnd); };
+    const onMove = (e) => { if (!dragging) return; const x = e.touches ? e.touches[0].clientX : e.clientX; const y = e.touches ? e.touches[0].clientY : e.clientY; const dx = x - startX; const dy = y - startY; card.style.left = baseLeft + dx + 'px'; card.style.top = baseTop + dy + 'px'; assessPeekForCard(card); };
+    const onEnd = () => { if (!dragging) return; dragging = false; clearPeekReason('drag'); document.removeEventListener('mousemove', onMove); document.removeEventListener('touchmove', onMove); document.removeEventListener('mouseup', onEnd); document.removeEventListener('touchend', onEnd); saveLayout(); };
+    const onStart = (e) => { if ((e.target && e.target.closest('.card-resize-handle')) || (e.button && e.button !== 0)) return; dragging = true; startX = e.touches ? e.touches[0].clientX : e.clientX; startY = e.touches ? e.touches[0].clientY : e.clientY; baseLeft = parseInt(card.style.left || '0'); baseTop = parseInt(card.style.top || '0'); document.addEventListener('mousemove', onMove); document.addEventListener('touchmove', onMove, { passive: false }); document.addEventListener('mouseup', onEnd); document.addEventListener('touchend', onEnd); assessPeekForCard(card); };
     handle.addEventListener('mousedown', onStart); handle.addEventListener('touchstart', onStart, { passive: true });
   };
 
@@ -96,6 +97,12 @@ function setupCanvasCards() {
   if (composition) { enableDrag(composition); enableResize(composition); }
   if (output) { enableDrag(output); enableResize(output); }
 }
+
+// ----- Auto panel behavior PURGED (no-ops to keep API surface) -----
+export function initAutoPanelBehavior() {}
+export function clearPeekReason() {}
+export function assessPeekForModal() {}
+function assessPeekForCard() {}
 
 function setupBackgroundPicker() {
   const input = document.getElementById('bg-input');

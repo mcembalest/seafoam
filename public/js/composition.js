@@ -1,5 +1,6 @@
 import { state, setCompositionImage, setSavedData } from './state.js';
 import { saveImage, getSaved } from './api.js';
+import { assessPeekForModal, clearPeekReason } from './layout.js';
 
 export function initComposition() {
   setupDragAndDrop();
@@ -19,6 +20,7 @@ function setupActions() {
   if (modalGen) modalGen.onclick = generate;
   if (modalCancel) modalCancel.onclick = () => {
     document.getElementById('preview-modal').style.display = 'none';
+    clearPeekReason('modal');
   };
   if (downloadBtn) downloadBtn.onclick = () => {
     const img = document.getElementById('generated-image');
@@ -41,15 +43,15 @@ function setupActions() {
 
 function setupDragAndDrop() {
   document.addEventListener('dragstart', (e) => {
-    if (e.target.closest('.icon-btn') || e.target.closest('.saved-name-input')) {
+    if (e.target.closest('.icon-btn')) {
       e.preventDefault();
       return;
     }
-    if (e.target.closest('.saved-item, .saved-text-item')) {
-      const item = e.target.closest('.saved-item, .saved-text-item');
+    const dragEl = e.target.closest('.saved-item, .saved-text-item, .saved-tile, .list-row');
+    if (dragEl) {
       e.dataTransfer.setData('text/plain', JSON.stringify({
-        id: item.dataset.id,
-        type: item.dataset.type
+        id: dragEl.dataset.id,
+        type: dragEl.dataset.type
       }));
     }
   });
@@ -136,6 +138,7 @@ export function showPreview() {
   const jsonEl = document.getElementById('preview-json');
   if (jsonEl) jsonEl.textContent = jsonStr;
   document.getElementById('preview-modal').style.display = 'flex';
+  assessPeekForModal();
 }
 
 export async function generate() {
@@ -144,6 +147,7 @@ export async function generate() {
   const activeImages = state.compositionImages.filter(img => img !== null);
   if (!text.trim()) return;
   document.getElementById('preview-modal').style.display = 'none';
+  clearPeekReason('modal');
   setLoading('generate-btn', true);
   const formData = new FormData();
   formData.append('prompt', text);

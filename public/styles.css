@@ -49,22 +49,13 @@ header {
     color: transparent;
 }
 
-.panel-toggle {
-    margin-top: 12px;
-    padding: 8px 12px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    background: var(--background-white);
-    color: var(--text-primary);
-    cursor: pointer;
-    font-size: 12px;
-}
+/* removed .panel-toggle legacy styles */
 .drawer-toggle {
     position: fixed;
     left: 50%;
     transform: translateX(-50%);
     bottom: 8px;
-    z-index: 1200;
+    z-index: 1500;
     background: rgba(255,255,255,0.7);
     -webkit-backdrop-filter: saturate(180%) blur(10px);
     backdrop-filter: saturate(180%) blur(10px);
@@ -154,7 +145,7 @@ header p {
     height: var(--saved-panel-height, 28vh);
     max-height: 60vh;
     padding: 20px;
-    background: rgba(255,255,255,0.78);
+    background: rgba(255,255,255,0.65);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
     backdrop-filter: saturate(180%) blur(20px);
     box-shadow: 0 -10px 30px rgba(0,0,0,0.12);
@@ -170,8 +161,8 @@ header p {
 }
 
 .panel-grabber {
-    width: 56px;
-    height: 6px;
+    width: 50%;
+    height: 16px;
     border-radius: 999px;
     background: rgba(0,0,0,0.16);
     margin: 4px auto 12px auto;
@@ -215,50 +206,73 @@ header p {
 
 .saved-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 10px;
     margin-bottom: 12px;
     min-height: 60px;
 }
 
-.saved-list {
-    margin-bottom: 12px;
-    min-height: 40px;
-}
+.saved-list { margin-bottom: 12px; min-height: 40px; }
 
-.saved-item {
-    cursor: grab;
-    border-radius: var(--border-radius);
-    overflow: hidden;
-    transition: var(--transition);
+/* Unified glassy tiles for images and text */
+.saved-tile {
+    position: relative;
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    position: relative;
+    align-items: stretch;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.5);
+    -webkit-backdrop-filter: saturate(180%) blur(18px);
+    backdrop-filter: saturate(180%) blur(18px);
+    border: 1px solid rgba(255,255,255,0.5);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    overflow: hidden;
+    cursor: grab;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    user-select: none;
+    -webkit-user-select: none;
 }
+.saved-tile:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0,0,0,0.12); }
+.tile-thumb { width: 100%; height: 80px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.05); }
+.tile-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tile-thumb.text-thumb { font-size: 28px; color: #5f6368; }
+.tile-body { padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.tile-name { font-size: 12px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row-name { font-size: 12px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tile-caption, .tile-preview { color: var(--text-secondary); font-size: 11px; line-height: 1.4; min-height: 14px; }
+.tile-actions { position: absolute; top: 6px; right: 6px; opacity: 0; transition: opacity 0.2s ease; }
+.saved-tile:hover .tile-actions { opacity: 1; }
 
-.saved-item:hover {
-    transform: scale(1.05);
-}
+/* Add tile matching icons */
+.add-tile { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; height:100%; padding: 10px; color: var(--text-secondary); background: rgba(255,255,255,0.4); border: 1px dashed var(--border-color); }
+.add-tile .add-icon { font-size: 22px; }
+.add-tile .add-label { font-size: 12px; }
 
-.saved-item img {
-    width: 100%;
-    height: 60px;
-    object-fit: cover;
-}
+/* List view styles */
+.list-section { position: relative; }
+.list-section .section-header { display:flex; align-items:center; justify-content: space-between; margin-bottom: 8px; }
+.list-section .list-add-btn { padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 8px; background: rgba(255,255,255,0.9); font-size: 12px; cursor: pointer; }
+.list-rows { display: flex; flex-direction: column; gap: 8px; }
+.list-row { display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 12px; background: rgba(255,255,255,0.5); -webkit-backdrop-filter: saturate(180%) blur(18px); backdrop-filter: saturate(180%) blur(18px); user-select: none; -webkit-user-select: none; }
+.row-thumb { width: 40px; height: 40px; border-radius: 8px; background: rgba(0,0,0,0.05); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.row-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.row-thumb.text { font-size: 18px; color: #5f6368; }
+.row-name-input { width: 100%; border: 1px solid var(--border-color); border-radius: 8px; padding: 6px 8px; font-size: 12px; background: rgba(255,255,255,0.9); }
+.row-actions .icon-btn { opacity: 1; }
 
-.grid-actions {
-    position: absolute;
-    top: 6px;
-    left: 6px;
-    right: 6px;
-    display: flex;
-    justify-content: space-between;
-    opacity: 0;
-    transition: var(--transition);
-}
+/* Toggle buttons */
+.view-toggle .toggle-btn { padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 999px; background: rgba(255,255,255,0.7); font-size: 12px; cursor: pointer; }
+.view-toggle .toggle-btn.active { border-color: var(--primary-color); color: var(--primary-color); background: rgba(66,133,244,0.08); }
 
-.saved-item:hover .grid-actions { opacity: 1; }
+/* Position add buttons: icon mode hides them, list mode shows at header top-right */
+.save-panel .add-btn { display: none; }
+.save-panel.list-view .add-btn { display: inline-flex; }
+.save-panel.list-view .saved-images, .save-panel.list-view .saved-texts { position: relative; }
+.save-panel.list-view .saved-images .add-btn, .save-panel.list-view .saved-texts .add-btn { position: absolute; right: 0; top: 0; width: auto; padding: 6px 10px; }
+
+/* Legacy grid-actions kept working on tiles */
+.grid-actions { position: absolute; top: 6px; left: 6px; right: 6px; display:flex; justify-content: space-between; opacity:0; transition: var(--transition);} 
+.saved-tile:hover .grid-actions { opacity: 1; }
 
 .icon-btn {
     width: 22px;
@@ -274,36 +288,9 @@ header p {
     -webkit-user-drag: none;
 }
 
-.saved-name-input {
-    width: 100%;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    padding: 6px 8px;
-    font-size: 12px;
-}
+/* removed inline rename inputs; editing happens in modals */
 
-.saved-text-item {
-    background: var(--background-light);
-    padding: 8px 12px;
-    margin-bottom: 8px;
-    border-radius: var(--border-radius);
-    cursor: grab;
-    font-size: 12px;
-    border: 1px solid var(--border-color);
-}
-
-.saved-text-item:hover {
-    background: rgba(66, 133, 244, 0.04);
-}
-
-.saved-text-name-row {
-    margin-bottom: 6px;
-}
-
-.saved-text-preview {
-    color: var(--text-secondary);
-    font-size: 12px;
-}
+/* Legacy text list styles replaced by list rows */
 
 .add-btn {
     width: 100%;
@@ -643,55 +630,7 @@ textarea:focus, select:focus {
     font-size: 14px;
 }
 
-.templates-section {
-    background: var(--background-white);
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow-light);
-    padding: 24px;
-}
-
-.templates-section h3 {
-    color: var(--text-primary);
-    margin-bottom: 20px;
-    font-size: 1.25rem;
-    font-weight: 600;
-}
-
-.template-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 16px;
-}
-
-.template-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 20px 16px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    cursor: pointer;
-    transition: var(--transition);
-    background-color: var(--background-white);
-}
-
-.template-card:hover {
-    border-color: var(--primary-color);
-    box-shadow: var(--shadow-light);
-    transform: translateY(-2px);
-}
-
-.template-icon {
-    font-size: 2rem;
-    margin-bottom: 8px;
-}
-
-.template-title {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-primary);
-    text-align: center;
-}
+/* removed unused template styles */
 
 .modal {
     position: fixed;
@@ -703,7 +642,7 @@ textarea:focus, select:focus {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    z-index: 2000;
 }
 
 .modal-content {

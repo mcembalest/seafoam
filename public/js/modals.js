@@ -1,5 +1,6 @@
 import { patchText, patchImage } from './api.js';
 import { updateTextInSaved, updateImageInSaved } from './state.js';
+import { assessPeekForModal, clearPeekReason } from './layout.js';
 
 // Text editor modal
 export function openTextEditor(item) {
@@ -11,6 +12,7 @@ export function openTextEditor(item) {
   nameInput.value = item.name || '';
   bodyTextarea.value = item.text || '';
   modal.style.display = 'flex';
+  assessPeekForModal();
 
   const onKey = (e) => {
     if (e.key === 'Escape') doCancel();
@@ -21,8 +23,9 @@ export function openTextEditor(item) {
     await patchText(item.id, payload);
     updateTextInSaved(item.id, payload);
     cleanup();
+    clearPeekReason('modal');
   };
-  const doCancel = () => cleanup();
+  const doCancel = () => { cleanup(); clearPeekReason('modal'); };
   function cleanup() {
     modal.style.display = 'none';
     document.removeEventListener('keydown', onKey);
@@ -60,6 +63,7 @@ export function openImageEditor(item, onAfterSave) {
   cropState.image.src = `data:${item.mimeType};base64,${item.data}`;
   overlay.style.display = 'none';
   modal.style.display = 'flex';
+  assessPeekForModal();
 
   const onKey = (e) => {
     if (e.key === 'Escape') doCancel();
@@ -140,10 +144,11 @@ export function openImageEditor(item, onAfterSave) {
     const payload = { name: nameInput.value.trim(), caption: captionInput.value, data: base64, mimeType: cropState.mimeType };
     await patchImage(item.id, payload);
     updateImageInSaved(item.id, { name: payload.name, caption: payload.caption, data: base64, mimeType: cropState.mimeType });
-    cleanup();
+        cleanup();
+        clearPeekReason('modal');
     if (typeof onAfterSave === 'function') onAfterSave(item.id);
   };
-  const doCancel = () => cleanup();
+  const doCancel = () => { cleanup(); clearPeekReason('modal'); };
   function cleanup() {
     modal.style.display = 'none';
     document.removeEventListener('keydown', onKey);
@@ -190,4 +195,3 @@ function normalizeRect(r) {
   const h = Math.abs(r.h);
   return { x, y, w, h };
 }
-
