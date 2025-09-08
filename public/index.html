@@ -28,12 +28,12 @@
                         <h3>Saved Images</h3>
                         <div id="saved-images-grid" class="saved-grid"></div>
                         <input type="file" id="add-image" accept="image/*" multiple style="display: none;">
-                        <button id="add-image-btn" class="add-btn">+ Add Images</button>
+                        <button id="add-image-btn" class="add-btn">+ Upload New Image</button>
                     </div>
                     <div class="saved-texts">
-                        <h3>Text Snippets</h3>
+                        <h3>Saved Instructions</h3>
                         <div id="saved-texts-list" class="saved-list"></div>
-                        <button id="add-text-btn" class="add-btn">+ Add Text</button>
+                        <button id="add-text-btn" class="add-btn">+ Write New Instruction</button>
                     </div>
                 </div>
         </div>
@@ -43,23 +43,27 @@
             <div id="canvas" class="canvas">
             
             <div class="composition-section canvas-card" data-card="composition">
+                <div class="card-header card-drag-handle">Composer</div>
                 <div class="composition-area">
+                    
                     <div class="form-group">
-                        <label>Composition Text</label>
-                        <textarea id="composition-text" placeholder="Drag text snippets here or write your prompt..."></textarea>
+                        <p>Instructions</p>
+                        <textarea id="composition-text" placeholder="Write your instructions here (or drag saved instructions from your library)"></textarea>
                     </div>
                     
                     <div class="form-group">
-                        <label>Image Slots</label>
+                        <p>Images</p>
+                        <p>Upload here (or drag saved images from your library)</p>
                         <div id="image-slots" class="image-slots">
+                            
                             <div class="image-slot" data-slot="0">
-                                <span>Drop image here</span>
+                                <span>Image</span>
                             </div>
                             <div class="image-slot" data-slot="1">
-                                <span>Drop image here</span>
+                                <span>Image</span>
                             </div>
                             <div class="image-slot" data-slot="2">
-                                <span>Drop image here</span>
+                                <span>Image</span>
                             </div>
                         </div>
                         <input type="file" id="slot-file-input" accept="image/*" style="display: none;">
@@ -99,7 +103,7 @@
             </div>
         </div>
 
-        <button id="drawer-toggle" class="drawer-toggle" aria-label="Toggle Saved">▲</button>
+        <button id="drawer-toggle" class="drawer-toggle" aria-label="Toggle Image + Instruction Library">Image + Instruction Library ▲</button>
 
         <div id="preview-modal" class="modal" style="display: none;">
             <div class="modal-content">
@@ -112,7 +116,6 @@
                 </div>
                 <div class="modal-actions">
                     <button id="modal-cancel">Cancel</button>
-                    <button id="modal-generate" class="generate-btn">Generate</button>
                 </div>
             </div>
         </div>
@@ -182,6 +185,5 @@
     </div>
 
     <script type="module" src="js/main.js"></script>
-    <script src="script.js"></script>
 </body>
 </html>
