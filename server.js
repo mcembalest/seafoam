@@ -17,11 +17,15 @@ app.use(express.static('public'));
 
 app.post('/api/compose', upload.array('images'), async (req, res) => {
     const { prompt } = req.body;
-    
+    let captions = [];
+    try {
+        if (req.body.captions) captions = JSON.parse(req.body.captions);
+    } catch (_) { captions = []; }
+
     const contents = [prompt];
-    
+
     if (req.files) {
-        req.files.forEach(file => {
+        req.files.forEach((file, idx) => {
             const imageBuffer = fs.readFileSync(file.path);
             const base64Image = imageBuffer.toString('base64');
             contents.push({
@@ -30,6 +34,10 @@ app.post('/api/compose', upload.array('images'), async (req, res) => {
                     mimeType: file.mimetype
                 }
             });
+            const cap = captions[idx];
+            if (cap && typeof cap === 'string' && cap.trim()) {
+                contents.push(cap.trim());
+            }
             fs.unlinkSync(file.path);
         });
     }
@@ -123,14 +131,14 @@ app.put('/api/ui-config', (req, res) => {
 });
 
 app.post('/api/save-image', (req, res) => {
-    const { data, mimeType, name, size, createdAt } = req.body;
+    const { data, mimeType, name, size, createdAt, caption } = req.body;
     const id = Date.now().toString();
     const defaultName = name && name.trim() ? name.trim() : `Image ${savedData.images.length + 1}`;
     const computedSize = typeof size === 'number' ? size : Math.ceil((data?.length || 0) * 3 / 4);
     const ts = typeof createdAt === 'number' ? createdAt : Date.now();
-    savedData.images.push({ id, data, mimeType, name: defaultName, size: computedSize, createdAt: ts });
+    savedData.images.push({ id, data, mimeType, name: defaultName, caption: caption || '', size: computedSize, createdAt: ts });
     saveToDisk();
-    res.json({ id, name: defaultName, size: computedSize, createdAt: ts });
+    res.json({ id, name: defaultName, caption: caption || '', size: computedSize, createdAt: ts });
 });
 
 app.post('/api/save-text', (req, res) => {
@@ -145,19 +153,27 @@ app.post('/api/save-text', (req, res) => {
 });
 
 app.patch('/api/saved/image/:id', (req, res) => {
-    const { name } = req.body;
+    const { name, data, mimeType, size, caption } = req.body;
     const item = savedData.images.find(img => img.id === req.params.id);
     if (!item) return res.status(404).json({ error: 'Not found' });
-    item.name = (name || '').trim() || item.name || 'Image';
+    if (typeof name !== 'undefined') item.name = (name || '').trim() || item.name || 'Image';
+    if (typeof caption !== 'undefined') item.caption = caption || '';
+    if (typeof data === 'string' && data.length > 0) {
+        item.data = data;
+        if (mimeType) item.mimeType = mimeType;
+        const computedSize = typeof size === 'number' ? size : Math.ceil((data.length || 0) * 3 / 4);
+        item.size = computedSize;
+    }
     saveToDisk();
     res.json({ success: true });
 });
 
 app.patch('/api/saved/text/:id', (req, res) => {
-    const { name } = req.body;
+    const { name, text } = req.body;
     const item = savedData.texts.find(txt => txt.id === req.params.id);
     if (!item) return res.status(404).json({ error: 'Not found' });
-    item.name = (name || '').trim() || item.name || 'Snippet';
+    if (typeof name !== 'undefined') item.name = (name || '').trim() || item.name || 'Snippet';
+    if (typeof text !== 'undefined') item.text = text || '';
     saveToDisk();
     res.json({ success: true });
 });

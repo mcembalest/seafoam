@@ -21,7 +21,7 @@
             </div>
         </header>
 
-        <div id="side-panel" class="filesystem-section side-panel">
+        <div id="save-panel" class="filesystem-section save-panel">
                 <div id="panel-grabber" class="panel-grabber" aria-label="Resize saved panel"></div>
                 <div class="panel-body">
                     <div class="saved-images">
@@ -124,6 +124,58 @@
                 <div class="modal-actions">
                     <button id="text-cancel">Cancel</button>
                     <button id="text-save">Save</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="text-editor-modal" class="modal" style="display:none;">
+            <div class="modal-content" style="max-width:720px;">
+                <h3>Edit Text Snippet</h3>
+                <div class="form-group">
+                    <label>Name</label>
+                    <input id="edit-text-name" type="text" />
+                </div>
+                <div class="form-group">
+                    <label>Text</label>
+                    <textarea id="edit-text-body" rows="8"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button id="edit-text-cancel">Cancel (Esc)</button>
+                    <button id="edit-text-save" class="generate-btn">Save (Enter)</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="image-editor-modal" class="modal" style="display:none;">
+            <div class="modal-content" style="max-width:900px;">
+                <h3>Edit Image</h3>
+                <div class="form-group">
+                    <label>Name</label>
+                    <input id="edit-image-name" type="text" />
+                </div>
+                <div class="form-group">
+                    <label>Caption</label>
+                    <textarea id="edit-image-caption" rows="3" placeholder="Optional caption shown after image"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Image</label>
+                    <div style="display:flex; gap:12px; align-items:flex-start;">
+                        <div style="position:relative; border:1px solid #e0e0e0;">
+                            <canvas id="edit-image-canvas" width="480" height="320" style="max-width:100%; background:#111;"></canvas>
+                            <div id="crop-overlay" style="position:absolute; border:2px dashed #00bcd4; display:none; pointer-events:none;"></div>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:8px;">
+                            <input id="replace-image-input" type="file" accept="image/*" style="display:none;" />
+                            <button id="replace-image-btn">Replace Image</button>
+                            <button id="crop-toggle-btn">Crop</button>
+                            <button id="crop-apply-btn" style="display:none;">Apply Crop</button>
+                            <button id="crop-cancel-btn" style="display:none;">Cancel Crop</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button id="edit-image-cancel">Cancel (Esc)</button>
+                    <button id="edit-image-save" class="generate-btn">Save (Enter)</button>
                 </div>
             </div>
         </div>

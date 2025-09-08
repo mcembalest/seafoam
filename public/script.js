@@ -37,7 +37,8 @@ async function loadUiConfig() {
             document.documentElement.style.setProperty('--saved-panel-height', uiConfig.panel.height);
         }
         if (uiConfig?.panel?.open) {
-            document.getElementById('side-panel').classList.add('open');
+            const p = document.getElementById('side-panel');
+            if (p) p.classList.add('open');
         }
         if (uiConfig?.background?.url) {
             document.documentElement.style.setProperty('--app-bg-url', `url('${uiConfig.background.url}')`);
@@ -56,6 +57,7 @@ function renderSavedItems() {
             </div>
             <img src="data:${img.mimeType};base64,${img.data}" alt="Saved">
             <input class="saved-name-input" data-type="image" data-id="${img.id}" value="${img.name || ''}" />
+            ${img.caption ? `<div class="saved-caption">${(img.caption || '').substring(0,50)}${(img.caption||'').length>50?'...':''}</div>` : ''}
         </div>`
     ).join('');
     
@@ -75,6 +77,213 @@ function renderSavedItems() {
 
     attachNameEditors();
     attachItemActionHandlers();
+    attachItemEditors();
+}
+
+// Open edit modals on single-click (avoid during drag)
+function attachItemEditors() {
+    document.querySelectorAll('.saved-text-item').forEach(el => {
+        el.onclick = (e) => {
+            if (e.target.closest('.icon-btn') || e.target.closest('.saved-name-input')) return;
+            const id = el.getAttribute('data-id');
+            const item = savedData.texts.find(t => t.id === id);
+            if (item) openTextEditor(item);
+        };
+    });
+    document.querySelectorAll('.saved-item').forEach(el => {
+        el.onclick = (e) => {
+            if (e.target.closest('.icon-btn') || e.target.closest('.saved-name-input')) return;
+            const id = el.getAttribute('data-id');
+            const item = savedData.images.find(i => i.id === id);
+            if (item) openImageEditor(item);
+        };
+    });
+}
+
+function openTextEditor(item) {
+    const modal = document.getElementById('text-editor-modal');
+    const nameInput = document.getElementById('edit-text-name');
+    const bodyTextarea = document.getElementById('edit-text-body');
+    const saveBtn = document.getElementById('edit-text-save');
+    const cancelBtn = document.getElementById('edit-text-cancel');
+    nameInput.value = item.name || '';
+    bodyTextarea.value = item.text || '';
+    modal.style.display = 'flex';
+
+    const onKey = (e) => {
+        if (e.key === 'Escape') doCancel();
+        if (e.key === 'Enter' && (e.target === nameInput || e.metaKey || e.ctrlKey)) doSave();
+    };
+    const doSave = async () => {
+        const payload = { name: nameInput.value.trim(), text: bodyTextarea.value };
+        await fetch(`/api/saved/text/${item.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const target = savedData.texts.find(t => t.id === item.id);
+        if (target) { target.name = payload.name; target.text = payload.text; }
+        modal.style.display = 'none';
+        document.removeEventListener('keydown', onKey);
+        renderSavedItems();
+    };
+    const doCancel = () => {
+        modal.style.display = 'none';
+        document.removeEventListener('keydown', onKey);
+    };
+    saveBtn.onclick = doSave;
+    cancelBtn.onclick = doCancel;
+    setTimeout(() => nameInput.focus(), 0);
+    document.addEventListener('keydown', onKey);
+}
+
+let cropState = { active: false, start: null, rect: null, image: null, mimeType: null };
+function openImageEditor(item) {
+    const modal = document.getElementById('image-editor-modal');
+    const nameInput = document.getElementById('edit-image-name');
+    const captionInput = document.getElementById('edit-image-caption');
+    const canvas = document.getElementById('edit-image-canvas');
+    const ctx = canvas.getContext('2d');
+    const overlay = document.getElementById('crop-overlay');
+    const replaceBtn = document.getElementById('replace-image-btn');
+    const replaceInput = document.getElementById('replace-image-input');
+    const cropToggle = document.getElementById('crop-toggle-btn');
+    const cropApply = document.getElementById('crop-apply-btn');
+    const cropCancel = document.getElementById('crop-cancel-btn');
+    const saveBtn = document.getElementById('edit-image-save');
+    const cancelBtn = document.getElementById('edit-image-cancel');
+
+    nameInput.value = item.name || '';
+    captionInput.value = item.caption || '';
+    cropState = { active: false, start: null, rect: null, image: new Image(), mimeType: item.mimeType };
+    cropState.image.onload = () => {
+        drawImageToCanvas(cropState.image, canvas, ctx);
+    };
+    cropState.image.src = `data:${item.mimeType};base64,${item.data}`;
+    overlay.style.display = 'none';
+    modal.style.display = 'flex';
+
+    const onKey = (e) => {
+        if (e.key === 'Escape') doCancel();
+        if (e.key === 'Enter' && (e.target === nameInput || e.target === captionInput || e.metaKey || e.ctrlKey)) doSave();
+    };
+
+    replaceBtn.onclick = () => replaceInput.click();
+    replaceInput.onchange = async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            cropState.mimeType = file.type;
+            cropState.image = new Image();
+            cropState.image.onload = () => drawImageToCanvas(cropState.image, canvas, ctx);
+            cropState.image.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+    };
+
+    const onDown = (e) => {
+        if (!cropState.active) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+        const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+        cropState.start = { x, y };
+        cropState.rect = { x, y, w: 0, h: 0 };
+        overlay.style.display = 'block';
+        positionOverlay(overlay, canvas, cropState.rect);
+    };
+    const onMove = (e) => {
+        if (!cropState.active || !cropState.start) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+        const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+        cropState.rect.w = x - cropState.start.x;
+        cropState.rect.h = y - cropState.start.y;
+        positionOverlay(overlay, canvas, cropState.rect);
+    };
+    const onUp = () => { cropState.start = null; };
+
+    canvas.addEventListener('mousedown', onDown);
+    canvas.addEventListener('mousemove', onMove);
+    canvas.addEventListener('mouseup', onUp);
+    canvas.addEventListener('touchstart', onDown, { passive: true });
+    canvas.addEventListener('touchmove', onMove, { passive: false });
+    canvas.addEventListener('touchend', onUp);
+
+    cropToggle.onclick = () => {
+        cropState.active = !cropState.active;
+        cropApply.style.display = cropState.active ? 'inline-block' : 'none';
+        cropCancel.style.display = cropState.active ? 'inline-block' : 'none';
+        if (!cropState.active) { overlay.style.display = 'none'; cropState.rect = null; }
+    };
+    cropCancel.onclick = () => { cropState.rect = null; overlay.style.display = 'none'; };
+    cropApply.onclick = () => {
+        if (!cropState.rect) return;
+        const abs = normalizeRect(cropState.rect);
+        const temp = document.createElement('canvas');
+        temp.width = abs.w; temp.height = abs.h;
+        const tctx = temp.getContext('2d');
+        tctx.drawImage(canvas, abs.x, abs.y, abs.w, abs.h, 0, 0, abs.w, abs.h);
+        const dataUrl = temp.toDataURL(cropState.mimeType || 'image/png');
+        cropState.image = new Image();
+        cropState.image.onload = () => drawImageToCanvas(cropState.image, canvas, ctx);
+        cropState.image.src = dataUrl;
+        overlay.style.display = 'none';
+        cropState.rect = null;
+        cropState.active = false;
+        cropApply.style.display = 'none';
+        cropCancel.style.display = 'none';
+    };
+
+    const doSave = async () => {
+        const dataUrl = canvas.toDataURL(cropState.mimeType || 'image/png');
+        const base64 = dataUrl.split(',')[1];
+        const payload = { name: nameInput.value.trim(), caption: captionInput.value, data: base64, mimeType: cropState.mimeType };
+        await fetch(`/api/saved/image/${item.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const target = savedData.images.find(i => i.id === item.id);
+        if (target) { target.name = payload.name; target.caption = payload.caption; target.data = base64; target.mimeType = cropState.mimeType; }
+        modal.style.display = 'none';
+        cleanup();
+        renderSavedItems();
+        updateSlotsUsing(item.id);
+    };
+    const doCancel = () => { modal.style.display = 'none'; cleanup(); };
+    function cleanup() {
+        document.removeEventListener('keydown', onKey);
+        canvas.removeEventListener('mousedown', onDown);
+        canvas.removeEventListener('mousemove', onMove);
+        canvas.removeEventListener('mouseup', onUp);
+        canvas.removeEventListener('touchstart', onDown);
+        canvas.removeEventListener('touchmove', onMove);
+        canvas.removeEventListener('touchend', onUp);
+    }
+
+    saveBtn.onclick = doSave;
+    cancelBtn.onclick = doCancel;
+    document.addEventListener('keydown', onKey);
+}
+
+function drawImageToCanvas(img, canvas, ctx) {
+    const cw = canvas.width, ch = canvas.height;
+    ctx.clearRect(0, 0, cw, ch);
+    const iw = img.naturalWidth, ih = img.naturalHeight;
+    const scale = Math.min(cw / iw, ch / ih);
+    const w = iw * scale, h = ih * scale;
+    const x = (cw - w) / 2, y = (ch - h) / 2;
+    ctx.drawImage(img, x, y, w, h);
+}
+
+function positionOverlay(overlay, canvas, r) {
+    const rect = normalizeRect(r);
+    overlay.style.left = rect.x + 'px';
+    overlay.style.top = rect.y + 'px';
+    overlay.style.width = rect.w + 'px';
+    overlay.style.height = rect.h + 'px';
+}
+
+function normalizeRect(r) {
+    const x = r.w < 0 ? r.x + r.w : r.x;
+    const y = r.h < 0 ? r.y + r.h : r.y;
+    const w = Math.abs(r.w);
+    const h = Math.abs(r.h);
+    return { x, y, w, h };
 }
 
 function attachNameEditors() {
@@ -327,7 +536,7 @@ function setupSlotClickUpload() {
 
 function setupSavedPanelToggle() {
     const toggleBtn = document.getElementById('drawer-toggle') || document.getElementById('toggle-saved-btn');
-    const panel = document.getElementById('side-panel');
+    const panel = document.getElementById('save-panel');
     // restore open state and height
     const savedOpen = localStorage.getItem('savedPanelOpen');
     const savedHeight = localStorage.getItem('savedPanelHeight');
@@ -412,10 +621,13 @@ async function generate() {
     const formData = new FormData();
     formData.append('prompt', text);
     
+    const captions = [];
     for (const img of activeImages) {
         const blob = await fetch(`data:${img.mimeType};base64,${img.data}`).then(r => r.blob());
         formData.append('images', blob);
+        captions.push(img.caption || '');
     }
+    formData.append('captions', JSON.stringify(captions));
     
     const response = await fetch('/api/compose', {
         method: 'POST',
@@ -629,9 +841,20 @@ function buildGeminiRequestPreview(text, images) {
                 mimeType: img.mimeType
             }
         });
+        if (img.caption && img.caption.trim()) contents.push(img.caption.trim());
     }
     return {
         model: 'gemini-2.5-flash-image-preview',
         contents
     };
+}
+
+function updateSlotsUsing(imageId) {
+    document.querySelectorAll('.image-slot').forEach((slot, idx) => {
+        const current = compositionImages[idx];
+        if (current && current.id === imageId) {
+            slot.innerHTML = `<img src="data:${current.mimeType};base64,${current.data}" alt="Composition">`;
+            slot.classList.add('filled');
+        }
+    });
 }
