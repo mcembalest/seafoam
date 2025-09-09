@@ -151,8 +151,10 @@ export function createCollectionBrowser({ panelEl, toggleEl, getMode, setMode, s
       enable: true,
       itemSelector: '.saved-tile, .list-row',
       buildPayload: (el) => {
-        const section = el.getAttribute('data-section') || '';
-        const type = section === 'texts' ? 'text' : 'image';
+        // Prefer explicit data-type, then fall back to data-section, else generic
+        const explicitType = el.getAttribute('data-type');
+        const section = el.getAttribute('data-section');
+        const type = (explicitType && explicitType.trim()) || (section && section.trim()) || 'item';
         return { id: el.getAttribute('data-id') || '', type };
       },
       ...(drag || {})

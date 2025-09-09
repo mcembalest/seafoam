@@ -46,7 +46,11 @@ Quick Start
       onDelete: async (t) => { await api.deleteText(t.id); refresh(); }
     }],
     // Optional drag overrides; enabled by default
-    // drag: { enable: true, itemSelector: '.saved-tile, .list-row', buildPayload: (el)=>({ id: el.dataset.id, type: el.dataset.section==='texts'?'text':'image' }) }
+    // drag: {
+    //   enable: true,
+    //   itemSelector: '.saved-tile, .list-row',
+    //   buildPayload: (el)=>({ id: el.dataset.id, type: el.dataset.type || el.dataset.section || 'item' })
+    // }
   });
   browser.init();
 
@@ -67,6 +71,7 @@ Components
 - Collection Browser: generic library
   - createCollectionBrowser({ panelEl, toggleEl, getMode, setMode, sections: [{ key, gridContainerEl, listContainerEl, getItems, renderGridItem, renderListRow, onItemClick?, onDelete?, addBtnEl?, onAdd? }], drag? })
   - Manages view mode + delegated item click/delete. Also auto-wires delegated drag sources by default so tiles/rows are draggable.
+  - Default drag payload: `{ id, type }` where `type` uses `data-type` if present, otherwise `data-section`, falling back to `'item'`.
 
 Utilities
 
@@ -122,7 +127,6 @@ Data-Attribute Defaults
 
 CSS Split
 
-- Load `galapagOS/galapagOS.css` before your app CSS to inherit platform defaults.
 - Platform provides minimal, generic styles for grid/list scaffolding, view toggles, panel grabber, and a `.dragover` helper.
 - Keep app-specific theming (e.g., glass backgrounds, brand colors) in your app stylesheet.
  - Tip: Prefer only tokens/structure in platform CSS and do visual theming in your app. If you override, keep selectors compatible (`.saved-grid`, `.saved-tile`, `.list-section`, `.list-row`).
@@ -130,7 +134,7 @@ CSS Split
 DnD Usage
 
 - Drag sources (auto):
-  - The collection browser automatically enables delegated drag on `panelEl` for `.saved-tile, .list-row` and serializes `{ id, type }` based on `data-id`/`data-section`.
+  - The collection browser automatically enables delegated drag on `panelEl` for `.saved-tile, .list-row` and serializes `{ id, type }` using `data-id` and `data-type` when present, else `data-section`.
 - Override/disable:
   createCollectionBrowser({
     panelEl, toggleEl, getMode, setMode, sections,
@@ -141,7 +145,19 @@ DnD Usage
     }
   })
 - Drop targets:
-  enableDropTarget({ targetEl: document.querySelector('.image-slot'), onDrop: (p) => { if (p?.type==='image') {/* ... */} }})
+  enableDropTarget({ targetEl: document.querySelector('.image-slot'), onDrop: (p) => { if (p?.type==='audio') {/* ... */} }})
+
+Local Storage Namespacing
+
+- initPlatformLayout accepts an optional `appId` to namespace localStorage keys (`libraryOpen`, `libraryHeight`, `cardsLayout`) to avoid collisions if multiple apps share the same origin.
+- Example:
+
+  initPlatformLayout({ panelEl, toggleBtnEl, cards, appId: 'tunafork' });
+
+Grabber Element
+
+- initPlatformLayout accepts an optional `grabberEl` to target your panel's resize handle.
+- If not provided, it looks for `[data-panel-grabber]`, then `#panel-grabber`.
 
 Accessibility
 

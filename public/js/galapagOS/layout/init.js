@@ -15,8 +15,17 @@ import { attachCardBehavior } from '../components/card.js';
  * @param {string} [opts.cssVarPanel='--library-height'] - CSS var to persist panel height
  * @param {Array<{key:string, el:HTMLElement, dragHandleEl?:HTMLElement, resizeHandleEl?:HTMLElement, varPrefix?:string}>} opts.cards
  */
-export function initPlatformLayout({ panelEl, toggleBtnEl, onToggleLabel, cssVarPanel = '--library-height', cards = [] }) {
+export function initPlatformLayout({ panelEl, toggleBtnEl, onToggleLabel, cssVarPanel = '--library-height', cards = [], grabberEl, appId } = {}) {
   if (!panelEl) return;
+
+  // Optional key prefix to avoid collisions across apps on same origin
+  const prefix = appId ? `gOS:${appId}:` : '';
+  const lsGet = (key) => {
+    try { return localStorage.getItem(prefix + key) ?? (prefix ? localStorage.getItem(key) : null); } catch (_) { return null; }
+  };
+  const lsSet = (key, value) => {
+    try { localStorage.setItem(prefix + key, value); } catch (_) {}
+  };
 
   // Panel open/close wiring with persistence
   if (toggleBtnEl) {
@@ -24,7 +33,8 @@ export function initPlatformLayout({ panelEl, toggleBtnEl, onToggleLabel, cssVar
       panelEl,
       toggleBtnEl,
       onToggle: (open) => {
-        try { localStorage.setItem('libraryOpen', open ? 'true' : 'false'); } catch (_) {}
+        // Persist open state (optionally namespaced)
+        lsSet('libraryOpen', open ? 'true' : 'false');
         if (typeof onToggleLabel === 'function') onToggleLabel(open);
         const next = {
           ...(getUiConfigState() || {}),
@@ -40,16 +50,17 @@ export function initPlatformLayout({ panelEl, toggleBtnEl, onToggleLabel, cssVar
   }
 
   // Panel resizer with persistence
-  const grabberEl = document.getElementById('panel-grabber') || document.querySelector('[data-panel-grabber]');
-  if (grabberEl) {
+  const resolvedGrabber = grabberEl || document.querySelector('[data-panel-grabber]') || document.getElementById('panel-grabber');
+  if (resolvedGrabber) {
     attachPanelResizer({
-      grabberEl: grabberEl,
+      grabberEl: resolvedGrabber,
       cssVar: cssVarPanel,
       minVh: 18,
       maxVh: 60,
       onResizeEnd: (value) => {
         if (!value) return;
-        try { localStorage.setItem('libraryHeight', value); } catch (_) {}
+        // Persist height (optionally namespaced)
+        lsSet('libraryHeight', value);
         const next = {
           ...(getUiConfigState() || {}),
           panel: {
@@ -106,7 +117,7 @@ export function initPlatformLayout({ panelEl, toggleBtnEl, onToggleLabel, cssVar
     };
     try {
       const cached = Object.fromEntries(Object.entries(cardsRect));
-      localStorage.setItem('cardsLayout', JSON.stringify(cached));
+      lsSet('cardsLayout', JSON.stringify(cached));
     } catch (_) {}
     try { await putUiConfig(payload); } catch (_) {}
   };
@@ -165,4 +176,3 @@ export function attachBackgroundPicker({ inputEl }) {
     reader.readAsDataURL(file);
   };
 }
-
