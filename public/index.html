@@ -21,7 +21,7 @@
             </div>
         </header>
 
-        <div id="save-panel" class="filesystem-section save-panel">
+        <div id="library-panel" class="filesystem-section library-panel">
                 <div id="panel-grabber" class="panel-grabber" aria-label="Resize saved panel"></div>
                 <div class="panel-body">
                     <div class="view-toggle" id="saved-view-toggle" style="display:flex; gap:8px; justify-content:flex-end; margin-bottom:8px;">
@@ -144,7 +144,7 @@
 
         <div id="text-editor-modal" class="modal" style="display:none;">
             <div class="modal-content" style="max-width:720px;">
-                <h3>Edit Text Snippet</h3>
+                <h3>Edit Text Instruction</h3>
                 <div class="form-group">
                     <label>Name</label>
                     <input id="edit-text-name" type="text" />
@@ -154,8 +154,8 @@
                     <textarea id="edit-text-body" rows="8"></textarea>
                 </div>
                 <div class="modal-actions">
-                    <button id="edit-text-cancel">Cancel (Esc)</button>
-                    <button id="edit-text-save" class="generate-btn">Save (Enter)</button>
+                    <button id="edit-text-cancel">Cancel</button>
+                    <button id="edit-text-save" class="generate-btn">Save</button>
                 </div>
             </div>
         </div>
@@ -182,14 +182,14 @@
                             <input id="replace-image-input" type="file" accept="image/*" style="display:none;" />
                             <button id="replace-image-btn">Replace Image</button>
                             <button id="crop-toggle-btn">Crop</button>
-                            <button id="crop-apply-btn" style="display:none;">Apply Crop</button>
-                            <button id="crop-cancel-btn" style="display:none;">Cancel Crop</button>
+                            <button id="crop-apply-btn" style="display:none;">Apply</button>
+                            <button id="crop-cancel-btn" style="display:none;">Cancel</button>
                         </div>
                     </div>
                 </div>
                 <div class="modal-actions">
-                    <button id="edit-image-cancel">Cancel (Esc)</button>
-                    <button id="edit-image-save" class="generate-btn">Save (Enter)</button>
+                    <button id="edit-image-cancel">Cancel</button>
+                    <button id="edit-image-save" class="generate-btn">Save</button>
                 </div>
             </div>
         </div>

@@ -12,45 +12,51 @@ export function initLayout() {
 
 function setupLibraryToggle() {
   const toggleBtn = document.getElementById('drawer-toggle') || document.getElementById('toggle-saved-btn');
-  const panel = document.getElementById('side-panel') || document.getElementById('save-panel');
-  const libraryOpen = localStorage.getItem('libraryOpen');
-  const libraryHeight = localStorage.getItem('libraryHeight');
-  if (libraryHeight) document.documentElement.style.setProperty('--library-height', libraryHeight);
-  if (libraryOpen === 'true') panel.classList.add('open');
-  else if (state.uiConfig?.panel?.open) panel.classList.add('open');
-  const openPanel = () => { panel.classList.add('open'); localStorage.setItem('libraryOpen', 'true'); if (toggleBtn && toggleBtn.id === 'drawer-toggle') toggleBtn.textContent = 'Image + Instruction Library ▼'; };
-  const closePanel = () => { panel.classList.remove('open'); localStorage.setItem('libraryOpen', 'false'); if (toggleBtn && toggleBtn.id === 'drawer-toggle') toggleBtn.textContent = 'Image + Instruction Library ▲'; };
-  if (toggleBtn) toggleBtn.onclick = () => { if (panel.classList.contains('open')) closePanel(); else openPanel(); };
+  const panel = document.getElementById('library-panel') || document.getElementById('side-panel') || document.getElementById('save-panel');
+  // Backward-compatible: prefer new keys, fall back to legacy
+  const savedOpen = localStorage.getItem('libraryOpen') ?? localStorage.getItem('savedPanelOpen');
+  const savedHeight = localStorage.getItem('libraryHeight') ?? localStorage.getItem('savedPanelHeight');
+  if (savedHeight) {
+    document.documentElement.style.setProperty('--library-height', savedHeight);
+  }
+  if (savedOpen === 'true') panel?.classList.add('open');
+  else if (state.uiConfig?.panel?.open) panel?.classList.add('open');
+  const openPanel = () => { panel?.classList.add('open'); localStorage.setItem('libraryOpen', 'true'); localStorage.setItem('savedPanelOpen', 'true'); if (toggleBtn && toggleBtn.id === 'drawer-toggle') toggleBtn.textContent = 'Image + Instruction Library ▼'; };
+  const closePanel = () => { panel?.classList.remove('open'); localStorage.setItem('libraryOpen', 'false'); localStorage.setItem('savedPanelOpen', 'false'); if (toggleBtn && toggleBtn.id === 'drawer-toggle') toggleBtn.textContent = 'Image + Instruction Library ▲'; };
+  if (toggleBtn && panel) toggleBtn.onclick = () => { if (panel.classList.contains('open')) closePanel(); else openPanel(); };
 }
 
 function setupPanelResizer() {
   const grabber = document.getElementById('panel-grabber');
   if (!grabber) return;
-  let startY = 0; let startHeight = 0;
-  const onMove = (e) => {
-    const dy = startY - (e.touches ? e.touches[0].clientY : e.clientY);
-    let newVh = Math.max(18, Math.min(60, ((startHeight + dy) / window.innerHeight) * 100));
-    const value = newVh.toFixed(1) + 'vh';
-    document.documentElement.style.setProperty('--library-height', value);
-  };
-  const onEnd = () => {
-    document.removeEventListener('mousemove', onMove);
-    document.removeEventListener('touchmove', onMove);
-    document.removeEventListener('mouseup', onEnd);
-    document.removeEventListener('touchend', onEnd);
-    const value = getComputedStyle(document.documentElement).getPropertyValue('--library-height').trim();
-    if (value) localStorage.setItem('savedPanelHeight', value);
-  };
-  const onStart = (e) => {
-    startY = e.touches ? e.touches[0].clientY : e.clientY;
+  let startY = 0; let startHeight = 0; let active = false;
+
+  const computeStartHeight = () => {
     const current = getComputedStyle(document.documentElement).getPropertyValue('--library-height').trim();
     const vh = current.endsWith('vh') ? parseFloat(current) : 28;
     startHeight = (vh / 100) * window.innerHeight;
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('touchmove', onMove, { passive: false });
-    document.addEventListener('mouseup', onEnd);
-    document.addEventListener('touchend', onEnd);
   };
+  const applyY = (clientY) => {
+    const dy = startY - clientY;
+    const newVh = Math.max(18, Math.min(60, ((startHeight + dy) / window.innerHeight) * 100));
+    const value = newVh.toFixed(1) + 'vh';
+    document.documentElement.style.setProperty('--library-height', value);
+  };
+  const persist = () => {
+    const value = getComputedStyle(document.documentElement).getPropertyValue('--library-height').trim();
+    if (value) { localStorage.setItem('libraryHeight', value); localStorage.setItem('savedPanelHeight', value); }
+  };
+
+  // Pointer events (cover mouse + touch)
+  const onPointerMove = (e) => { if (!active) return; e.preventDefault(); applyY(e.clientY); };
+  const onPointerUp = () => { if (!active) return; active = false; window.removeEventListener('pointermove', onPointerMove); window.removeEventListener('pointerup', onPointerUp); persist(); };
+  const onPointerDown = (e) => { active = true; startY = e.clientY; computeStartHeight(); window.addEventListener('pointermove', onPointerMove, { passive: false }); window.addEventListener('pointerup', onPointerUp); };
+  grabber.addEventListener('pointerdown', onPointerDown);
+
+  // Fallback legacy handlers
+  const onMove = (e) => { if (!active) return; const y = e.touches ? e.touches[0].clientY : e.clientY; applyY(y); };
+  const onEnd = () => { if (!active) return; active = false; document.removeEventListener('mousemove', onMove); document.removeEventListener('touchmove', onMove); document.removeEventListener('mouseup', onEnd); document.removeEventListener('touchend', onEnd); persist(); };
+  const onStart = (e) => { active = true; startY = e.touches ? e.touches[0].clientY : e.clientY; computeStartHeight(); document.addEventListener('mousemove', onMove); document.addEventListener('touchmove', onMove, { passive: false }); document.addEventListener('mouseup', onEnd); document.addEventListener('touchend', onEnd); };
   grabber.addEventListener('mousedown', onStart);
   grabber.addEventListener('touchstart', onStart, { passive: true });
 }
@@ -60,10 +66,22 @@ function setupCanvasCards() {
   const defaults = { composition: { x: 40, y: 120, w: 460, h: 360 }, output: { x: 560, y: 120, w: 520, h: 420 } };
   const applyLayout = (key, el) => {
     const cfg = (uiConfig && uiConfig.layout && uiConfig.layout.cards && uiConfig.layout.cards[key]) || defaults[key];
-    el.style.left = (cfg.x || 0) + 'px';
-    el.style.top = (cfg.y || 0) + 'px';
-    el.style.width = (cfg.w || 400) + 'px';
-    el.style.height = (cfg.h || 300) + 'px';
+    const pick = (v, d) => (typeof v === 'number' && !Number.isNaN(v) ? v : d);
+    const headerPad = 120; // avoid pushing cards under the browser/UI chrome
+    const minLeft = 12, minTop = headerPad;
+    let x = Math.max(minLeft, pick(cfg.x, defaults[key].x));
+    let y = Math.max(minTop, pick(cfg.y, defaults[key].y));
+    let w = Math.max(320, pick(cfg.w, defaults[key].w));
+    let h = Math.max(240, pick(cfg.h, defaults[key].h));
+    // Keep within viewport horizontally
+    const maxX = Math.max(minLeft, window.innerWidth - w - 16);
+    const maxY = Math.max(minTop, window.innerHeight - h - 24);
+    x = Math.min(x, maxX);
+    y = Math.min(y, maxY);
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    el.style.width = w + 'px';
+    el.style.height = h + 'px';
   };
   const composition = document.querySelector('.canvas-card[data-card="composition"]');
   const output = document.querySelector('.canvas-card[data-card="output"]');

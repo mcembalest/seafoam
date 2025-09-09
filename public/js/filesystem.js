@@ -38,7 +38,7 @@ function setViewMode(mode) {
 
 function applyInitialViewMode() {
   const mode = getViewMode();
-  const panel = document.getElementById('save-panel') || document.getElementById('side-panel');
+  const panel = document.getElementById('library-panel') || document.getElementById('save-panel') || document.getElementById('side-panel');
   panel?.classList.toggle('list-view', mode === 'list');
   const toggle = document.getElementById('saved-view-toggle');
   if (toggle) {
@@ -55,7 +55,7 @@ function setupViewToggle() {
     if (!btn) return;
     const mode = btn.dataset.mode;
     setViewMode(mode);
-    const panel = document.getElementById('save-panel') || document.getElementById('side-panel');
+    const panel = document.getElementById('library-panel') || document.getElementById('save-panel') || document.getElementById('side-panel');
     panel?.classList.toggle('list-view', mode === 'list');
     toggle.querySelectorAll('.toggle-btn').forEach(b => b.classList.toggle('active', b === btn));
     renderSavedItems();
@@ -74,7 +74,7 @@ function renderSavedItems() {
     const tiles = state.savedData.images.map(img => `
       <div class="saved-tile" draggable="true" data-id="${img.id}" data-type="image">
         <div class="grid-actions"><button class="icon-btn delete-btn" title="Delete" data-type="image" data-id="${img.id}">✕</button></div>
-        <div class="tile-thumb"><img src="data:${img.mimeType};base64,${img.data}" alt="Saved"></div>
+        <div class="tile-thumb"><img loading="lazy" decoding="async" src="data:${img.mimeType};base64,${img.data}" alt="Saved"></div>
         <div class="tile-body">
           <div class="tile-name" title="${img.name || ''}">${img.name || ''}</div>
           ${img.caption ? `<div class=\"tile-caption\">${(img.caption || '').substring(0,50)}${(img.caption||'').length>50?'...':''}</div>` : '<div class=\"tile-caption\"></div>'}
@@ -109,7 +109,7 @@ function renderSavedItems() {
         <div class="list-rows">
           ${state.savedData.images.map(img => `
             <div class="list-row" draggable="true" data-id="${img.id}" data-type="image">
-              <div class="row-thumb"><img src="data:${img.mimeType};base64,${img.data}" alt="Saved"></div>
+              <div class="row-thumb"><img loading="lazy" decoding="async" src="data:${img.mimeType};base64,${img.data}" alt="Saved"></div>
               <div class="row-name" title="${img.name || ''}">${img.name || ''}</div>
               <div class="row-actions"><button class="icon-btn delete-btn" title="Delete" data-type="image" data-id="${img.id}">✕</button></div>
             </div>
@@ -134,7 +134,7 @@ function renderSavedItems() {
 }
 
 function setupDelegatedDeletion() {
-  const panel = document.getElementById('save-panel') || document.getElementById('side-panel');
+  const panel = document.getElementById('library-panel') || document.getElementById('save-panel') || document.getElementById('side-panel');
   if (!panel || panel.__hasDeleteDelegation) return;
   panel.__hasDeleteDelegation = true;
   panel.addEventListener('click', async (e) => {

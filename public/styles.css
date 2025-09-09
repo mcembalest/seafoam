@@ -119,6 +119,20 @@ header p {
     border: 1px solid rgba(255,255,255,0.38);
 }
 
+/* Pre-size cards using CSS variables to avoid CLS before JS applies styles */
+.canvas-card[data-card="composition"] {
+    left: var(--comp-x, 40px);
+    top: var(--comp-y, 120px);
+    width: var(--comp-w, 460px);
+    height: var(--comp-h, 360px);
+}
+.canvas-card[data-card="output"] {
+    left: var(--out-x, 560px);
+    top: var(--out-y, 120px);
+    width: var(--out-w, 520px);
+    height: var(--out-h, 420px);
+}
+
 .card-drag-handle {
     cursor: move;
     padding: 8px 12px;
@@ -137,12 +151,12 @@ header p {
     background: linear-gradient(135deg, transparent 50%, rgba(0,0,0,0.2) 50%);
 }
 
-.save-panel {
+.library-panel {
     position: fixed;
     left: 0;
     right: 0;
     bottom: 0;
-    height: var(--saved-panel-height, 28vh);
+    height: var(--library-height, 28vh);
     max-height: 60vh;
     padding: 20px;
     background: rgba(255,255,255,0.65);
@@ -156,7 +170,7 @@ header p {
     border-top-right-radius: 16px;
 }
 
-.save-panel.open {
+.library-panel.open {
     transform: translateY(0);
 }
 
@@ -166,6 +180,8 @@ header p {
     border-radius: 999px;
     background: rgba(0,0,0,0.16);
     margin: 4px auto 12px auto;
+    touch-action: none;
+    cursor: ns-resize;
 }
 
 .panel-body {
@@ -174,7 +190,7 @@ header p {
 }
 
 @media (min-width: 1024px) {
-    .save-panel { height: var(--saved-panel-height, 22vh); }
+    .library-panel { height: var(--library-height, 22vh); }
 }
 
 .filesystem-section, .composition-section, .output-section {
@@ -265,10 +281,10 @@ header p {
 .view-toggle .toggle-btn.active { border-color: var(--primary-color); color: var(--primary-color); background: rgba(66,133,244,0.08); }
 
 /* Position add buttons: icon mode hides them, list mode shows at header top-right */
-.save-panel .add-btn { display: none; }
-.save-panel.list-view .add-btn { display: inline-flex; }
-.save-panel.list-view .saved-images, .save-panel.list-view .saved-texts { position: relative; }
-.save-panel.list-view .saved-images .add-btn, .save-panel.list-view .saved-texts .add-btn { position: absolute; right: 0; top: 0; width: auto; padding: 6px 10px; }
+.library-panel .add-btn { display: none; }
+.library-panel.list-view .add-btn { display: inline-flex; }
+.library-panel.list-view .saved-images, .library-panel.list-view .saved-texts { position: relative; }
+.library-panel.list-view .saved-images .add-btn, .library-panel.list-view .saved-texts .add-btn { position: absolute; right: 0; top: 0; width: auto; padding: 6px 10px; }
 
 /* Legacy grid-actions kept working on tiles */
 .grid-actions { position: absolute; top: 6px; left: 6px; right: 6px; display:flex; justify-content: space-between; opacity:0; transition: var(--transition);} 
@@ -330,6 +346,7 @@ header p {
     transition: var(--transition);
     cursor: pointer;
 }
+.image-slot img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 .image-slot.dragover {
     border-color: var(--primary-color);
@@ -580,9 +597,7 @@ textarea:focus, select:focus {
     margin-bottom: 12px;
 }
 
-.image-result {
-    text-align: center;
-}
+.image-result { text-align: center; min-height: 300px; }
 
 .image-result img {
     max-width: 100%;
