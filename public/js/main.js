@@ -1,10 +1,10 @@
-// Frontend bootstrap (galapagOS + Seafoam)
+// Seafoama frontend
 
 import { getSaved } from './libraryAPI.js';
-import { getUiConfig } from './galapagOS/api/uiConfig.js';
-import { setUiConfigState } from './galapagOS/state/uiState.js';
+import { getUiConfig } from '../gOS/api/uiConfig.js';
+import { setUiConfigState } from '../gOS/state/uiState.js';
 import { setSavedData } from './state.js';
-import { startStatusPolling } from './galapagOS/status.js';
+import { startStatusPolling } from '../gOS/status.js';
 import { initFilesystem } from './filesystem.js';
 import { initComposition } from './composer.js';
 import { initLayout } from './layout.js';
@@ -89,6 +89,9 @@ async function bootstrap() {
 
 document.addEventListener('DOMContentLoaded', bootstrap);
 
+/**
+ * Migrate legacy localStorage keys to new names. (CAN WE REMOVE THIS?)
+ */
 function migrateLocalStorageKeys() {
   try {
     const legacyOpen = localStorage.getItem('savedPanelOpen');

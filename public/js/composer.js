@@ -1,9 +1,9 @@
-// Image composer component
+// Image composer card component
 
 import { state, setCompositionImage, setSavedData } from './state.js';
 import { saveImage, getSaved } from './libraryAPI.js';
-import { readAsBase64 } from './galapagOS/files.js';
-import { getDropPayload, enableDropTarget } from './galapagOS/dnd.js';
+import { readAsBase64 } from '../gOS/files.js';
+import { getDropPayload, enableDropTarget } from '../gOS/dnd.js';
 
 /**
  * [Seafoam] Initialize composer interactions: DnD, slot uploads, actions.
@@ -141,10 +141,6 @@ function setupDragAndDrop() {
       }
     });
   }
-
-  // These are captured in setupSlotClickUpload
-  var slotFileInput = document.getElementById('slot-file-input');
-  var activeSlotIndex = null;
 }
 
 /**

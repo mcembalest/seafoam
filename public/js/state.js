@@ -45,8 +45,6 @@ export function setSavedData(data) {
   emit('savedData:change', data);
 }
 
-// UI config moved to galapagOS/state/uiState.js
-
 /**
  * [Seafoam] Set a composition slot image and notify listeners.
  * @param {number} idx

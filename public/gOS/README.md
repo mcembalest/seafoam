@@ -1,4 +1,4 @@
-galapagOS Platform Modules
+galápagOS (gOS) Platform Modules
 
 Overview
 
@@ -12,9 +12,6 @@ Quick Start
    - Containers for your sections (grid/list can share an element)
 
 2) App code:
-
-  import { createCollectionBrowser } from './galapagOS/components/collectionBrowser.js';
-  import { createViewModeController } from './galapagOS/viewMode.js';
 
   const panelEl = document.querySelector('[data-panel]') || document.getElementById('library-panel');
   const toggleEl = document.getElementById('saved-view-toggle');

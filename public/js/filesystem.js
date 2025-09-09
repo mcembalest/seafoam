@@ -1,18 +1,16 @@
-// Library of images and written text instructions (galapagOS + Seafoam)
+// Library filesystem panel for images and written text instructions
 
 import { state, setSavedData, subscribe } from './state.js';
 import { saveImage, saveText, deleteImage, deleteText } from './libraryAPI.js';
-import { putUiConfig } from './galapagOS/api/uiConfig.js';
-import { setUiConfigState, getUiConfigState } from './galapagOS/state/uiState.js';
-import { createCollectionBrowser } from './galapagOS/components/collectionBrowser.js';
-import { readAsBase64 } from './galapagOS/files.js';
+import { putUiConfig } from '../gOS/api/uiConfig.js';
+import { setUiConfigState, getUiConfigState } from '../gOS/state/uiState.js';
+import { createCollectionBrowser } from '../gOS/components/collectionBrowser.js';
+import { readAsBase64 } from '../gOS/files.js';
 import { openTextEditor } from './textEditor.js';
 import { openImageEditor } from './imageEditor.js';
-import { formatFileSize, formatDate, escapeHtml } from './galapagOS/utils/format.js';
-import { enableDelegatedDrag } from './galapagOS/dnd.js';
+import { formatFileSize, formatDate, escapeHtml } from '../gOS/utils/format.js';
+import { enableDelegatedDrag } from '../gOS/dnd.js';
 import { updateSlotsUsing } from './composer.js';
-
-// format helpers moved to galapagOS/utils/format.js
 
 /**
  * [Seafoam] Initialize library panel: renderers, adders, view toggle, and deletion.

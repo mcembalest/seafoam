@@ -63,23 +63,23 @@
   "ui": {
     "panel": {
       "open": false,
-      "height": "43.1vh"
+      "height": "44.5vh"
     },
     "layout": {
       "left": "1fr",
       "right": "1fr",
       "cards": {
         "composition": {
-          "x": 67,
-          "y": -47,
+          "x": 21,
+          "y": 5,
           "w": 842,
           "h": 499
         },
         "output": {
-          "x": 993,
-          "y": -110,
+          "x": 1128,
+          "y": -38,
           "w": 320,
-          "h": 372
+          "h": 580
         }
       }
     },

@@ -1,4 +1,4 @@
-// Status icon for the server (galapagOS)
+// gOS status icon for a server
 
 /**
  * [galapagOS] Ping backend /health and update status pill.

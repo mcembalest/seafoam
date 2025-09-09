@@ -1,4 +1,4 @@
-// File utilities (galapagOS platform)
+// gOS file utilities 
 
 /**
  * Read a File object as a base64 string (without the data URL prefix).

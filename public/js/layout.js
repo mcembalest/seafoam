@@ -1,6 +1,7 @@
 // Layout configuration (galapagOS + Seafoam)
+// Eventualy we should probably remove this and just use the gOS layout/init.js file
 
-import { initPlatformLayout, attachBackgroundPicker } from './galapagOS/layout/init.js';
+import { initPlatformLayout, attachBackgroundPicker } from '../gOS/layout/init.js';
 
 /**
  * App layout wiring via platform initializer.

@@ -1,4 +1,4 @@
-// galapagOS DnD helpers: reusable drag sources and drop targets
+// gOS reusable drag sources and drop targets
 
 /**
  * Set a JSON payload on a drag event's dataTransfer.
