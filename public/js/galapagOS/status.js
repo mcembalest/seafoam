@@ -1,5 +1,9 @@
 // Status icon for the server (galapagOS)
 
+/**
+ * [galapagOS] Ping backend /health and update status pill.
+ * @returns {Promise<boolean>} online
+ */
 export async function pingServer() {
   try {
     const res = await fetch('/health');
@@ -12,6 +16,10 @@ export async function pingServer() {
   }
 }
 
+/**
+ * [galapagOS] Update the server status pill UI.
+ * @param {boolean} isOnline
+ */
 export function setServerStatus(isOnline) {
   const pill = document.getElementById('server-status');
   if (!pill) return;
@@ -25,8 +33,14 @@ export function setServerStatus(isOnline) {
   }
 }
 
+/**
+ * [galapagOS] Start polling server health on an interval.
+ * @param {number} intervalMs
+ * @returns {number} interval id
+ */
 export function startStatusPolling(intervalMs = 10000) {
   pingServer();
   return setInterval(pingServer, intervalMs);
 }
+
 

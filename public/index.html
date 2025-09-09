@@ -5,6 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Seafoam</title>
     <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+    <script>
+      // Pre-apply UI CSS variables before styles to minimize CLS
+      (function(){
+        try {
+          var root = document.documentElement.style;
+          var h = localStorage.getItem('libraryHeight') || localStorage.getItem('savedPanelHeight');
+          if (h) root.setProperty('--library-height', h);
+          var cards = null;
+          try { cards = JSON.parse(localStorage.getItem('cardsLayout') || 'null'); } catch(_) {}
+          if (cards) {
+            var c = cards.composition || {}, o = cards.output || {};
+            function px(v){return (typeof v === 'number' && !isNaN(v)) ? (v + 'px') : null;}
+            var cx = px(c.x), cy = px(c.y), cw = px(c.w), ch = px(c.h);
+            var ox = px(o.x), oy = px(o.y), ow = px(o.w), oh = px(o.h);
+            if (cx) root.setProperty('--comp-x', cx);
+            if (cy) root.setProperty('--comp-y', cy);
+            if (cw) root.setProperty('--comp-w', cw);
+            if (ch) root.setProperty('--comp-h', ch);
+            if (ox) root.setProperty('--out-x', ox);
+            if (oy) root.setProperty('--out-y', oy);
+            if (ow) root.setProperty('--out-w', ow);
+            if (oh) root.setProperty('--out-h', oh);
+          }
+        } catch (e) {}
+      })();
+    </script>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>

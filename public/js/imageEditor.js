@@ -1,10 +1,15 @@
-// Image editing modal (seafoam)
+// Image editor modal
 
-import { patchImage } from './api.js';
+import { patchImage } from './libraryAPI.js';
 import { updateImageInSaved } from './state.js';
 
 let cropState = { active: false, start: null, rect: null, image: null, mimeType: null };
 
+/**
+ * [Seafoam] Open the image editor modal for a saved image.
+ * @param {{id:string, name?:string, caption?:string, data:string, mimeType:string}} item
+ * @param {(id:string)=>void} onAfterSave
+ */
 export function openImageEditor(item, onAfterSave) {
   const modal = document.getElementById('image-editor-modal');
   const nameInput = document.getElementById('edit-image-name');
@@ -132,6 +137,9 @@ export function openImageEditor(item, onAfterSave) {
   document.addEventListener('keydown', onKey);
 }
 
+/**
+ * [Seafoam] Draw an image to the canvas preserving aspect ratio.
+ */
 function drawImageToCanvas(img, canvas, ctx) {
   const cw = canvas.width, ch = canvas.height;
   ctx.clearRect(0, 0, cw, ch);
@@ -142,6 +150,9 @@ function drawImageToCanvas(img, canvas, ctx) {
   ctx.drawImage(img, x, y, w, h);
 }
 
+/**
+ * [Seafoam] Position crop overlay according to a rect.
+ */
 function positionOverlay(overlay, canvas, r) {
   const rect = normalizeRect(r);
   overlay.style.left = rect.x + 'px';
@@ -150,6 +161,9 @@ function positionOverlay(overlay, canvas, r) {
   overlay.style.height = rect.h + 'px';
 }
 
+/**
+ * [Seafoam] Normalize rect with negative width/height into positive values.
+ */
 function normalizeRect(r) {
   const x = r.w < 0 ? r.x + r.w : r.x;
   const y = r.h < 0 ? r.y + r.h : r.y;

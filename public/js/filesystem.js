@@ -1,10 +1,14 @@
-// Library of images and written text instructions (galapagOS + seafoam)
+// Library of images and written text instructions (galapagOS + Seafoam)
 
-import { state, setSavedData, setUiConfig, subscribe } from './state.js';
-import { saveImage, saveText, deleteImage, deleteText, putUiConfig } from './api.js';
+import { state, setSavedData, subscribe } from './state.js';
+import { saveImage, saveText, deleteImage, deleteText } from './libraryAPI.js';
+import { putUiConfig } from './galapagOS/api/uiConfig.js';
+import { setUiConfigState, getUiConfigState } from './galapagOS/state/uiState.js';
+import { createViewModeController } from './galapagOS/viewMode.js';
+import { readAsBase64 } from './galapagOS/files.js';
 import { openTextEditor } from './textEditor.js';
 import { openImageEditor } from './imageEditor.js';
-import { updateSlotsUsing } from './composition.js';
+import { updateSlotsUsing } from './composer.js';
 
 // Utility functions for formatting
 function formatFileSize(bytes) {
@@ -33,62 +37,83 @@ function formatDate(timestamp) {
   }
 }
 
+/**
+ * [Seafoam] Initialize library panel: renderers, adders, view toggle, and deletion.
+ */
 export function initFilesystem() {
   renderSavedItems();
   subscribe('savedData:change', renderSavedItems);
   setupAdders();
-  setupViewToggle();
-  applyInitialViewMode();
   setupDelegatedDeletion();
+
+  const panel = document.getElementById('library-panel') || document.getElementById('save-panel') || document.getElementById('side-panel');
+  const toggle = document.getElementById('saved-view-toggle');
+  const controller = createViewModeController({
+    getMode: () => {
+      const cfg = getUiConfigState();
+      const mode = (cfg && cfg.view && cfg.view.imagesMode) || localStorage.getItem('savedViewMode') || 'grid';
+      return mode === 'list' ? 'list' : 'grid';
+    },
+    setMode: (mode) => {
+      const nextMode = mode === 'list' ? 'list' : 'grid';
+      localStorage.setItem('savedViewMode', nextMode);
+      const curr = getUiConfigState();
+      const newCfg = {
+        ...(curr || {}),
+        view: {
+          ...(curr && curr.view ? curr.view : {}),
+          imagesMode: nextMode,
+          textsMode: nextMode
+        }
+      };
+      setUiConfigState(newCfg);
+      try { putUiConfig(newCfg); } catch (_) {}
+    },
+    panelEl: panel,
+    toggleEl: toggle,
+    onRender: () => renderSavedItems()
+  });
+  controller.init();
 }
 
+/**
+ * [galapagOS] Read current images view mode from UI config or localStorage.
+ * @returns {'grid'|'list'}
+ */
 function getViewMode() {
-  const cfg = state.uiConfig;
+  const cfg = getUiConfigState();
   const mode = (cfg && cfg.view && cfg.view.imagesMode) || localStorage.getItem('savedViewMode') || 'grid';
   return mode === 'list' ? 'list' : 'grid';
 }
 
+/**
+ * [galapagOS] Persist view mode to localStorage and server UI config.
+ * @param {'grid'|'list'} mode
+ */
 function setViewMode(mode) {
   const next = mode === 'list' ? 'list' : 'grid';
   localStorage.setItem('savedViewMode', next);
+  const curr = getUiConfigState();
   const newCfg = {
-    ...(state.uiConfig || {}),
+    ...(curr || {}),
     view: {
-      ...(state.uiConfig && state.uiConfig.view ? state.uiConfig.view : {}),
+      ...(curr && curr.view ? curr.view : {}),
       imagesMode: next,
       textsMode: next
     }
   };
-  setUiConfig(newCfg);
+  setUiConfigState(newCfg);
   try { putUiConfig(newCfg); } catch (_) {}
 }
 
-function applyInitialViewMode() {
-  const mode = getViewMode();
-  const panel = document.getElementById('library-panel') || document.getElementById('save-panel') || document.getElementById('side-panel');
-  panel?.classList.toggle('list-view', mode === 'list');
-  const toggle = document.getElementById('saved-view-toggle');
-  if (toggle) {
-    toggle.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.mode === mode));
-  }
-  renderSavedItems();
-}
+/**
+ * [galapagOS] Wire up the view mode toggle in the panel header.
+ */
+// View toggle wiring handled by createViewModeController
 
-function setupViewToggle() {
-  const toggle = document.getElementById('saved-view-toggle');
-  if (!toggle) return;
-  toggle.addEventListener('click', (e) => {
-    const btn = e.target.closest('.toggle-btn');
-    if (!btn) return;
-    const mode = btn.dataset.mode;
-    setViewMode(mode);
-    const panel = document.getElementById('library-panel') || document.getElementById('save-panel') || document.getElementById('side-panel');
-    panel?.classList.toggle('list-view', mode === 'list');
-    toggle.querySelectorAll('.toggle-btn').forEach(b => b.classList.toggle('active', b === btn));
-    renderSavedItems();
-  });
-}
-
+/**
+ * [Seafoam] Render saved images and texts according to the active view mode.
+ */
 function renderSavedItems() {
   const imagesGrid = document.getElementById('saved-images-grid');
   const textsList = document.getElementById('saved-texts-list');
@@ -101,7 +126,7 @@ function renderSavedItems() {
     const tiles = state.savedData.images.map(img => `
       <div class="saved-tile" draggable="true" data-id="${img.id}" data-type="image">
         <div class="grid-actions"><button class="icon-btn delete-btn" title="Delete" data-type="image" data-id="${img.id}">✕</button></div>
-        <div class="tile-thumb"><img loading="lazy" decoding="async" src="data:${img.mimeType};base64,${img.data}" alt="Saved"></div>
+        <div class="tile-thumb"><img loading="lazy" decoding="async" width="256" height="256" src="data:${img.mimeType};base64,${img.data}" alt="Saved"></div>
         <div class="tile-body">
           <div class="tile-name" title="${img.name || ''}">${img.name || ''}</div>
           ${img.caption ? `<div class=\"tile-caption\">${(img.caption || '').substring(0,50)}${(img.caption||'').length>50?'...':''}</div>` : '<div class=\"tile-caption\"></div>'}
@@ -144,7 +169,7 @@ function renderSavedItems() {
         <div class="list-rows">
           ${state.savedData.images.map(img => `
             <div class="list-row" draggable="true" data-id="${img.id}" data-type="image">
-              <div class="row-thumb"><img loading="lazy" decoding="async" src="data:${img.mimeType};base64,${img.data}" alt="Saved"></div>
+              <div class="row-thumb"><img loading="lazy" decoding="async" width="48" height="48" src="data:${img.mimeType};base64,${img.data}" alt="Saved"></div>
               <div class="row-name" title="${img.name || ''}">${img.name || ''}</div>
               <div class="row-date">${formatDate(img.createdAt || Date.now())}</div>
               <div class="row-size">${formatFileSize(img.size || 0)}</div>
@@ -182,6 +207,9 @@ function renderSavedItems() {
   attachAddHandlers();
 }
 
+/**
+ * [Seafoam] Delegated delete handling for items within the library panel.
+ */
 function setupDelegatedDeletion() {
   const panel = document.getElementById('library-panel') || document.getElementById('save-panel') || document.getElementById('side-panel');
   if (!panel || panel.__hasDeleteDelegation) return;
@@ -219,6 +247,9 @@ function setupDelegatedDeletion() {
   });
 }
 
+/**
+ * [Seafoam] Make clicking on saved items open respective editors.
+ */
 function attachItemEditors() {
   document.querySelectorAll('[data-type="text"]').forEach(el => {
     el.onclick = (e) => {
@@ -240,6 +271,9 @@ function attachItemEditors() {
   });
 }
 
+/**
+ * [Seafoam] Wire upload/add-new buttons for images and texts.
+ */
 function setupAdders() {
   const addImageInput = document.getElementById('add-image');
   const addImageBtn = document.getElementById('add-image-btn');
@@ -292,6 +326,9 @@ function setupAdders() {
   }
 }
 
+/**
+ * [Seafoam] Wire grid add tiles to trigger uploads/editor open.
+ */
 function attachAddHandlers() {
   const mode = getViewMode();
   if (mode === 'grid') {
@@ -306,11 +343,9 @@ function attachAddHandlers() {
   }
 }
 
-function readAsBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => resolve(e.target.result.split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
+/**
+ * [galapagOS] Read a File as base64 (without prefix) via FileReader.
+ * @param {File} file
+ * @returns {Promise<string>}
+ */
+// readAsBase64 provided by galapagOS/files.js

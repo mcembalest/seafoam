@@ -1,8 +1,12 @@
-// Text instruction editing modal (seafoam)
+// Text instruction editor modal
 
-import { patchText } from './api.js';
+import { patchText } from './libraryAPI.js';
 import { updateTextInSaved } from './state.js';
 
+/**
+ * [Seafoam] Open the text editor modal for a saved text instruction.
+ * @param {{id:string, name?:string, text:string}} item
+ */
 export function openTextEditor(item) {
     const modal = document.getElementById('text-editor-modal');
     const nameInput = document.getElementById('edit-text-name');

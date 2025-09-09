@@ -1,14 +1,21 @@
-// Composition of layout components (galapagOS + seafoam)
+// Image composer component
 
 import { state, setCompositionImage, setSavedData } from './state.js';
-import { saveImage, getSaved } from './api.js';
+import { saveImage, getSaved } from './libraryAPI.js';
+import { readAsBase64 } from './galapagOS/files.js';
 
+/**
+ * [Seafoam] Initialize composer interactions: DnD, slot uploads, actions.
+ */
 export function initComposition() {
   setupDragAndDrop();
   setupSlotClickUpload();
   setupActions();
 }
 
+/**
+ * [Seafoam] Wire composer action buttons (preview, generate, save/download).
+ */
 function setupActions() {
   const previewBtn = document.getElementById('preview-btn');
   const generateBtn = document.getElementById('generate-btn');
@@ -40,17 +47,21 @@ function setupActions() {
   };
 }
 
+/**
+ * [Seafoam] Enable drag/drop onto image slots and text area.
+ */
 function setupDragAndDrop() {
   // Handle slot remove buttons
   document.addEventListener('click', (e) => {
     const removeBtn = e.target.closest('.slot-remove-btn');
     if (removeBtn) {
+      e.preventDefault();
       e.stopPropagation();
       const slotIndex = parseInt(removeBtn.dataset.slot);
       setCompositionImage(slotIndex, null);
       const slotEl = document.querySelector(`.image-slot[data-slot="${slotIndex}"]`);
       if (slotEl) {
-        slotEl.innerHTML = '<span>Drop image here</span>';
+        slotEl.innerHTML = '<span>Image</span>';
         slotEl.classList.remove('filled');
       }
     }
@@ -72,6 +83,12 @@ function setupDragAndDrop() {
 
   const slots = document.querySelectorAll('.image-slot');
   slots.forEach(slot => {
+    // Prevent the remove button click from triggering the slot's upload
+    slot.onclick = (e) => {
+      if (e && e.target && e.target.closest && e.target.closest('.slot-remove-btn')) return;
+      activeSlotIndex = parseInt(slot.dataset.slot);
+      slotFileInput?.click();
+    };
     slot.ondragover = (e) => { e.preventDefault(); slot.classList.add('dragover'); };
     slot.ondragleave = () => { slot.classList.remove('dragover'); };
     slot.ondrop = (e) => {
@@ -84,7 +101,7 @@ function setupDragAndDrop() {
           const slotIndex = parseInt(slot.dataset.slot);
           setCompositionImage(slotIndex, img);
           slot.innerHTML = `
-            <img src="data:${img.mimeType};base64,${img.data}" alt="Composition">
+            <img width="256" height="256" src="data:${img.mimeType};base64,${img.data}" alt="Composition">
             <button class="slot-remove-btn" title="Remove image" data-slot="${slotIndex}">×</button>
           `;
           slot.classList.add('filled');
@@ -110,14 +127,21 @@ function setupDragAndDrop() {
       }
     };
   }
+
+  // These are captured in setupSlotClickUpload
+  var slotFileInput = document.getElementById('slot-file-input');
+  var activeSlotIndex = null;
 }
 
+/**
+ * [Seafoam] Clicking a slot opens file input to add image to that slot.
+ */
 function setupSlotClickUpload() {
   const slotFileInput = document.getElementById('slot-file-input');
   const slots = document.querySelectorAll('.image-slot');
   let activeSlotIndex = null;
   slots.forEach(slot => {
-    slot.onclick = () => { activeSlotIndex = parseInt(slot.dataset.slot); slotFileInput?.click(); };
+    slot.onclick = (e) => { if (e && e.target && e.target.closest && e.target.closest('.slot-remove-btn')) return; activeSlotIndex = parseInt(slot.dataset.slot); slotFileInput?.click(); };
   });
   if (slotFileInput) {
     slotFileInput.onchange = async (e) => {
@@ -135,7 +159,7 @@ function setupSlotClickUpload() {
       const slotEl = document.querySelector(`.image-slot[data-slot="${activeSlotIndex}"]`);
       if (slotEl) {
         slotEl.innerHTML = `
-          <img src="data:${newImage.mimeType};base64,${newImage.data}" alt="Composition">
+          <img width="256" height="256" src="data:${newImage.mimeType};base64,${newImage.data}" alt="Composition">
           <button class="slot-remove-btn" title="Remove image" data-slot="${activeSlotIndex}">×</button>
         `;
         slotEl.classList.add('filled');
@@ -146,6 +170,9 @@ function setupSlotClickUpload() {
   }
 }
 
+/**
+ * [Seafoam] Show Gemini request preview modal.
+ */
 export function showPreview() {
   const rawText = document.getElementById('composition-text').value;
   const expandedText = expandSnippetNames(rawText);
@@ -157,6 +184,9 @@ export function showPreview() {
   document.getElementById('preview-modal').style.display = 'flex';
 }
 
+/**
+ * [Seafoam] Call backend compose to generate an image and display it.
+ */
 export async function generate() {
   const rawText = document.getElementById('composition-text').value;
   const text = expandSnippetNames(rawText);
@@ -179,12 +209,16 @@ export async function generate() {
   setLoading('generate-btn', false);
 }
 
+/**
+ * [Seafoam] Refresh any slots that reference a given saved image id.
+ * @param {string} imageId
+ */
 export function updateSlotsUsing(imageId) {
   document.querySelectorAll('.image-slot').forEach((slot, idx) => {
     const current = state.compositionImages[idx];
     if (current && current.id === imageId) {
       slot.innerHTML = `
-        <img src="data:${current.mimeType};base64,${current.data}" alt="Composition">
+        <img width="256" height="256" src="data:${current.mimeType};base64,${current.data}" alt="Composition">
         <button class="slot-remove-btn" title="Remove image" data-slot="${idx}">×</button>
       `;
       slot.classList.add('filled');
@@ -192,6 +226,9 @@ export function updateSlotsUsing(imageId) {
   });
 }
 
+/**
+ * [Seafoam] Display generated image in the output card.
+ */
 function displayImage(imageData) {
   const img = document.getElementById('generated-image');
   img.src = `data:${imageData.mimeType};base64,${imageData.data}`;
@@ -199,6 +236,9 @@ function displayImage(imageData) {
   document.getElementById('image-result').style.display = 'block';
 }
 
+/**
+ * [Seafoam] Toggle loading state for a button with text/spinner children.
+ */
 function setLoading(buttonId, loading) {
   const btn = document.getElementById(buttonId);
   btn.disabled = loading;
@@ -206,6 +246,9 @@ function setLoading(buttonId, loading) {
   btn.querySelector('.btn-loading').style.display = loading ? 'flex' : 'none';
 }
 
+/**
+ * [Seafoam] Build a preview request payload for Gemini image preview model.
+ */
 function buildGeminiRequestPreview(text, images) {
   const contents = [text];
   for (const img of images) {
@@ -215,6 +258,9 @@ function buildGeminiRequestPreview(text, images) {
   return { model: 'gemini-2.5-flash-image-preview', contents };
 }
 
+/**
+ * [Seafoam] Expand [name] references using saved text snippets by name.
+ */
 function expandSnippetNames(input) {
   return input.replace(/\[(.+?)\]/g, (match, name) => {
     const found = state.savedData.texts.find(t => (t.name || '').toLowerCase() === name.toLowerCase());
@@ -222,11 +268,3 @@ function expandSnippetNames(input) {
   });
 }
 
-function readAsBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => resolve(e.target.result.split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}

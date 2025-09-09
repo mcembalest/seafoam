@@ -1,16 +1,41 @@
-// Frontend code (galapagOS + seafoam)
+// Frontend bootstrap (galapagOS + Seafoam)
 
-import { getSaved, getUiConfig } from './api.js';
-import { setSavedData, setUiConfig } from './state.js';
-import { startStatusPolling } from './status.js';
+import { getSaved } from './libraryAPI.js';
+import { getUiConfig } from './galapagOS/api/uiConfig.js';
+import { setUiConfigState } from './galapagOS/state/uiState.js';
+import { setSavedData } from './state.js';
+import { startStatusPolling } from './galapagOS/status.js';
 import { initFilesystem } from './filesystem.js';
-import { initComposition } from './composition.js';
+import { initComposition } from './composer.js';
 import { initLayout } from './layout.js';
 
+/**
+ * [galapagOS] Initialize UI config and status; [Seafoam] load saved data and init modules.
+ */
 async function bootstrap() {
   try {
+    // Pre-apply cached UI to reduce CLS before network
+    try {
+      const savedHeight = localStorage.getItem('libraryHeight') || localStorage.getItem('savedPanelHeight');
+      if (savedHeight) document.documentElement.style.setProperty('--library-height', savedHeight);
+      const cards = JSON.parse(localStorage.getItem('cardsLayout') || 'null');
+      if (cards) {
+        const r = document.documentElement.style;
+        const pick = (v, d) => (typeof v === 'number' && !Number.isNaN(v) ? v : d);
+        const cIn = cards.composition || {}; const oIn = cards.output || {};
+        r.setProperty('--comp-x', pick(cIn.x, 40) + 'px');
+        r.setProperty('--comp-y', pick(cIn.y, 120) + 'px');
+        r.setProperty('--comp-w', pick(cIn.w, 460) + 'px');
+        r.setProperty('--comp-h', pick(cIn.h, 360) + 'px');
+        r.setProperty('--out-x', pick(oIn.x, 560) + 'px');
+        r.setProperty('--out-y', pick(oIn.y, 120) + 'px');
+        r.setProperty('--out-w', pick(oIn.w, 520) + 'px');
+        r.setProperty('--out-h', pick(oIn.h, 420) + 'px');
+      }
+    } catch (_) {}
+
     const cfg = await getUiConfig();
-    setUiConfig(cfg);
+    setUiConfigState(cfg);
     // Pre-size cards via CSS variables to avoid CLS before JS layouts
     try {
       const cards = (cfg && cfg.layout && cfg.layout.cards) || {};
