@@ -1,0 +1,33 @@
+/* galapagOS platform stylesheet (base + defaults)
+   - Keep platform styles minimal and app-agnostic.
+   - Load this before app-specific CSS.
+*/
+
+:root {
+  --panel-height: 28vh;
+  --transition: all 0.2s ease;
+}
+
+/* View toggle visuals are app-owned; platform provides no default styling. */
+
+/* Drop target helper */
+.dragover { outline: 2px dashed var(--primary-color, #4285f4); outline-offset: 2px; }
+
+
+/* Generic grid/list scaffolding (structure only; visuals live in apps) */
+.saved-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; margin-bottom: 12px; min-height: 60px; }
+.saved-tile { position: relative; display: flex; flex-direction: column; overflow: hidden; cursor: grab; transition: var(--transition); }
+.tile-thumb { width: 100%; height: 80px; display: flex; align-items: center; justify-content: center; aspect-ratio: 1 / 1; }
+.tile-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tile-body { padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.tile-name { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.list-section { position: relative; }
+.list-header { display: grid; grid-template-columns: 40px 1fr 200px 120px 120px 60px; align-items: center; gap: 10px; padding: 6px 10px; }
+.list-rows { display: flex; flex-direction: column; gap: 6px; }
+.list-row { display: grid; grid-template-columns: 40px 1fr 200px 120px 120px 60px; align-items: center; gap: 10px; padding: 8px 10px; }
+.row-thumb { width: 40px; height: 40px; border-radius: 8px; display:flex; align-items:center; justify-content:center; overflow:hidden; aspect-ratio: 1 / 1; }
+.row-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Panel grabber basic */
+.panel-grabber { height: 6px; cursor: ns-resize; background: linear-gradient(to bottom, rgba(0,0,0,0.06), rgba(0,0,0,0.02)); border-top: 1px solid rgba(0,0,0,0.06); border-bottom: 1px solid rgba(255,255,255,0.6); }

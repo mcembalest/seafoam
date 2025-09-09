@@ -8,10 +8,8 @@ export async function pingServer() {
   try {
     const res = await fetch('/health');
     const ok = res.ok;
-    setServerStatus(ok);
     return ok;
   } catch (_) {
-    setServerStatus(false);
     return false;
   }
 }
@@ -20,8 +18,7 @@ export async function pingServer() {
  * [galapagOS] Update the server status pill UI.
  * @param {boolean} isOnline
  */
-export function setServerStatus(isOnline) {
-  const pill = document.getElementById('server-status');
+export function setServerStatus(pill, isOnline) {
   if (!pill) return;
   pill.textContent = isOnline ? 'Online' : 'Offline';
   pill.classList.toggle('status-online', !!isOnline);
@@ -38,9 +35,13 @@ export function setServerStatus(isOnline) {
  * @param {number} intervalMs
  * @returns {number} interval id
  */
-export function startStatusPolling(intervalMs = 10000) {
-  pingServer();
-  return setInterval(pingServer, intervalMs);
+export function startStatusPolling({ pillEl, onUpdate, intervalMs = 10000 } = {}) {
+  const update = async () => {
+    const online = await pingServer();
+    if (pillEl) setServerStatus(pillEl, online);
+    if (typeof onUpdate === 'function') onUpdate(online);
+  };
+  update();
+  return setInterval(update, intervalMs);
 }
-
 

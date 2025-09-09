@@ -28,7 +28,8 @@ export function attachCardBehavior({ cardEl, dragHandleEl, resizeHandleEl, onCom
     if (typeof onCommit === 'function') onCommit(toRect(cardEl));
   };
   const onStart = (e) => {
-    if ((e.target && e.target.closest('.card-resize-handle')) || (e.button && e.button !== 0)) return;
+    if ((e.button && e.button !== 0)) return;
+    if (resizeHandleEl && (e.target === resizeHandleEl || resizeHandleEl.contains(e.target))) return;
     dragging = true;
     startX = e.touches ? e.touches[0].clientX : e.clientX;
     startY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -89,5 +90,4 @@ export function toRect(el) {
     h: parseInt(el.style.height || el.offsetHeight)
   };
 }
-
 

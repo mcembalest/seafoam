@@ -3,6 +3,7 @@
 import { state, setCompositionImage, setSavedData } from './state.js';
 import { saveImage, getSaved } from './libraryAPI.js';
 import { readAsBase64 } from './galapagOS/files.js';
+import { getDropPayload, enableDropTarget } from './galapagOS/dnd.js';
 
 /**
  * [Seafoam] Initialize composer interactions: DnD, slot uploads, actions.
@@ -67,34 +68,44 @@ function setupDragAndDrop() {
     }
   });
 
-  document.addEventListener('dragstart', (e) => {
-    if (e.target.closest('.icon-btn') || e.target.closest('.slot-remove-btn')) {
-      e.preventDefault();
-      return;
-    }
-    const dragEl = e.target.closest('.saved-item, .saved-text-item, .saved-tile, .list-row');
-    if (dragEl) {
-      e.dataTransfer.setData('text/plain', JSON.stringify({
-        id: dragEl.dataset.id,
-        type: dragEl.dataset.type
-      }));
-    }
-  });
+  // Drag payloads for library items are set via platform delegated drag in the library panel.
 
   const slots = document.querySelectorAll('.image-slot');
   slots.forEach(slot => {
-    // Prevent the remove button click from triggering the slot's upload
-    slot.onclick = (e) => {
-      if (e && e.target && e.target.closest && e.target.closest('.slot-remove-btn')) return;
-      activeSlotIndex = parseInt(slot.dataset.slot);
-      slotFileInput?.click();
-    };
+    // Click upload wiring is handled in setupSlotClickUpload
     slot.ondragover = (e) => { e.preventDefault(); slot.classList.add('dragover'); };
     slot.ondragleave = () => { slot.classList.remove('dragover'); };
-    slot.ondrop = (e) => {
+    slot.ondrop = async (e) => {
       e.preventDefault();
       slot.classList.remove('dragover');
-      const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+
+      // If a file is dropped from the OS, handle upload directly
+      const files = e.dataTransfer && e.dataTransfer.files;
+      if (files && files.length > 0) {
+        const file = files[0];
+        const slotIndex = parseInt(slot.dataset.slot);
+        try {
+          const base64 = await readAsBase64(file);
+          const resp = await fetch('/api/save-image', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data: base64, mimeType: file.type, name: file.name.replace(/\.[^/.]+$/, '') })
+          });
+          const { id } = await resp.json();
+          const newImage = { id, data: base64, mimeType: file.type, name: file.name.replace(/\.[^/.]+$/, '') };
+          state.savedData.images.push(newImage);
+          setCompositionImage(slotIndex, newImage);
+          slot.innerHTML = `
+            <img width="256" height="256" src="data:${newImage.mimeType};base64,${newImage.data}" alt="Composition">
+            <button class="slot-remove-btn" title="Remove image" data-slot="${slotIndex}">×</button>
+          `;
+          slot.classList.add('filled');
+        } catch (_) {}
+        return;
+      }
+
+      // Otherwise, attempt to parse internal drag payload
+      const data = getDropPayload(e);
+      if (!data) return;
       if (data.type === 'image') {
         const img = state.savedData.images.find(i => i.id === data.id);
         if (img) {
@@ -113,19 +124,22 @@ function setupDragAndDrop() {
 
   const textArea = document.getElementById('composition-text');
   if (textArea) {
-    textArea.ondragover = (e) => e.preventDefault();
-    textArea.ondrop = (e) => {
-      e.preventDefault();
-      const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-      if (data.type === 'text') {
-        const text = state.savedData.texts.find(t => t.id === data.id);
-        if (text) {
-          const currentText = textArea.value;
-          const insert = text.name ? `[${text.name}]` : text.text;
-          textArea.value = currentText ? `${currentText} ${insert}` : insert;
+    enableDropTarget({
+      targetEl: textArea,
+      onDrop: (data, ev) => {
+        // Ignore OS file drops in the text area
+        const files = ev.dataTransfer && ev.dataTransfer.files;
+        if (files && files.length > 0) return;
+        if (data && data.type === 'text') {
+          const text = state.savedData.texts.find(t => t.id === data.id);
+          if (text) {
+            const currentText = textArea.value;
+            const insert = text.name ? `[${text.name}]` : text.text;
+            textArea.value = currentText ? `${currentText} ${insert}` : insert;
+          }
         }
       }
-    };
+    });
   }
 
   // These are captured in setupSlotClickUpload
@@ -267,4 +281,3 @@ function expandSnippetNames(input) {
     return found ? found.text : match;
   });
 }
-

@@ -81,5 +81,3 @@ export async function patchText(id, payload) {
   });
   if (!res.ok) throw new Error('patchText failed');
 }
-
-// UI-config moved to galapagOS/api/uiConfig.js

@@ -1,7 +1,7 @@
-// Lightweight app state with pub/sub (galapagOS + seafoam)
+// Lightweight app state with pub/sub (Seafoam app)
 
 /**
- * [galapagOS] Simple pub/sub registry for reactive updates across modules.
+ * Simple pub/sub registry for reactive updates across Seafoam app modules.
  * Map<string, Set<Function>>
  */
 const listeners = new Map();
@@ -12,11 +12,10 @@ const listeners = new Map();
 export const state = {
   savedData: { images: [], texts: [] },
   compositionImages: [null, null, null],
-  uiConfig: null,
 };
 
 /**
- * [galapagOS] Subscribe to an event.
+ * Subscribe to an event within the Seafoam app.
  * @param {string} event
  * @param {(payload:any)=>void} cb
  * @returns {()=>void} unsubscribe
@@ -28,7 +27,7 @@ export function subscribe(event, cb) {
 }
 
 /**
- * [galapagOS] Emit an event with payload to all subscribers.
+ * Emit an event with payload to all subscribers.
  * @param {string} event
  * @param {any} payload
  */
@@ -46,14 +45,7 @@ export function setSavedData(data) {
   emit('savedData:change', data);
 }
 
-/**
- * [galapagOS] Replace UI config and notify listeners.
- * @param {object} cfg
- */
-export function setUiConfig(cfg) {
-  state.uiConfig = cfg;
-  emit('uiConfig:change', cfg);
-}
+// UI config moved to galapagOS/state/uiState.js
 
 /**
  * [Seafoam] Set a composition slot image and notify listeners.
@@ -86,4 +78,3 @@ export function updateTextInSaved(id, updates) {
   if (t) Object.assign(t, updates);
   emit('savedData:change', state.savedData);
 }
-

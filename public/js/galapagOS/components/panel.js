@@ -8,9 +8,6 @@ export function attachPanelToggle({ panelEl, toggleBtnEl, onToggle }) {
   if (!panelEl || !toggleBtnEl) return;
   const setOpen = (open) => {
     panelEl.classList.toggle('open', !!open);
-    if (toggleBtnEl.id === 'drawer-toggle') {
-      toggleBtnEl.textContent = open ? 'Image + Instruction Library ▼' : 'Image + Instruction Library ▲';
-    }
     if (typeof onToggle === 'function') onToggle(!!open);
   };
   toggleBtnEl.onclick = () => setOpen(!panelEl.classList.contains('open'));
@@ -20,7 +17,7 @@ export function attachPanelToggle({ panelEl, toggleBtnEl, onToggle }) {
  * Add pointer/mouse/touch handlers for resizing a panel's height using a grabber.
  * Persists the height into the provided CSS variable and calls onResizeEnd(value:string).
  */
-export function attachPanelResizer({ grabberEl, cssVar = '--library-height', minVh = 18, maxVh = 60, onResizeEnd }) {
+export function attachPanelResizer({ grabberEl, cssVar = '--panel-height', minVh = 18, maxVh = 60, onResizeEnd }) {
   if (!grabberEl) return;
   let startY = 0; let startHeight = 0; let active = false;
 
@@ -53,4 +50,14 @@ export function attachPanelResizer({ grabberEl, cssVar = '--library-height', min
   grabberEl.addEventListener('touchstart', onStart, { passive: true });
 }
 
-
+/**
+ * Convenience: auto attach panel behaviors using data-attribute defaults.
+ * Looks for [data-panel], [data-panel-toggle], [data-panel-grabber].
+ */
+export function autoAttachPanel({ onToggle, cssVar = '--panel-height', minVh = 18, maxVh = 60, onResizeEnd } = {}) {
+  const panelEl = document.querySelector('[data-panel]');
+  const toggleBtnEl = document.querySelector('[data-panel-toggle]');
+  const grabberEl = document.querySelector('[data-panel-grabber]');
+  if (panelEl && toggleBtnEl) attachPanelToggle({ panelEl, toggleBtnEl, onToggle });
+  if (grabberEl) attachPanelResizer({ grabberEl, cssVar, minVh, maxVh, onResizeEnd });
+}

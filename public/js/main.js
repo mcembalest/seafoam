@@ -10,9 +10,10 @@ import { initComposition } from './composer.js';
 import { initLayout } from './layout.js';
 
 /**
- * [galapagOS] Initialize UI config and status; [Seafoam] load saved data and init modules.
+ * App bootstrap: initialize platform UI config + status, then load Seafoam data and modules.
  */
 async function bootstrap() {
+  migrateLocalStorageKeys();
   try {
     // Pre-apply cached UI to reduce CLS before network
     try {
@@ -82,7 +83,27 @@ async function bootstrap() {
   initFilesystem();
   initComposition();
   initLayout();
-  startStatusPolling(10000);
+  const pill = document.getElementById('server-status');
+  startStatusPolling({ pillEl: pill, intervalMs: 10000 });
 }
 
 document.addEventListener('DOMContentLoaded', bootstrap);
+
+function migrateLocalStorageKeys() {
+  try {
+    const legacyOpen = localStorage.getItem('savedPanelOpen');
+    const modernOpen = localStorage.getItem('libraryOpen');
+    if (legacyOpen !== null && modernOpen === null) {
+      localStorage.setItem('libraryOpen', legacyOpen);
+      localStorage.removeItem('savedPanelOpen');
+    }
+    const legacyHeight = localStorage.getItem('savedPanelHeight');
+    const modernHeight = localStorage.getItem('libraryHeight');
+    if (legacyHeight !== null && modernHeight === null) {
+      localStorage.setItem('libraryHeight', legacyHeight);
+      localStorage.removeItem('savedPanelHeight');
+    }
+    const legacyCards = localStorage.getItem('cardsLayout');
+    // keep as-is; name is already neutral
+  } catch (_) {}
+}

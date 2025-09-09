@@ -16,46 +16,34 @@ app.use(express.json({ limit: '25mb' }));
 app.use(express.static('public'));
 
 app.post('/api/compose', upload.array('images'), async (req, res) => {
-    const { prompt } = req.body;
-    let captions = [];
     try {
-        if (req.body.captions) captions = JSON.parse(req.body.captions);
-    } catch (_) { captions = []; }
+        const { prompt } = req.body;
+        let captions = [];
+        try { if (req.body.captions) captions = JSON.parse(req.body.captions); } catch (_) { captions = []; }
 
-    const contents = [prompt];
+        const contents = [prompt];
 
-    if (req.files) {
-        req.files.forEach((file, idx) => {
-            const imageBuffer = fs.readFileSync(file.path);
-            const base64Image = imageBuffer.toString('base64');
-            contents.push({
-                inlineData: {
-                    data: base64Image,
-                    mimeType: file.mimetype
-                }
-            });
-            const cap = captions[idx];
-            if (cap && typeof cap === 'string' && cap.trim()) {
-                contents.push(cap.trim());
+        if (req.files) {
+            for (let idx = 0; idx < req.files.length; idx++) {
+                const file = req.files[idx];
+                const imageBuffer = fs.readFileSync(file.path);
+                const base64Image = imageBuffer.toString('base64');
+                contents.push({ inlineData: { data: base64Image, mimeType: file.mimetype } });
+                const cap = captions[idx];
+                if (cap && typeof cap === 'string' && cap.trim()) contents.push(cap.trim());
             }
-            fs.unlinkSync(file.path);
-        });
-    }
-
-    const result = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image-preview',
-        contents
-    });
-    
-    const imageData = result.candidates[0].content.parts.find(part => part.inlineData);
-    
-    res.json({
-        success: true,
-        image: {
-            data: imageData.inlineData.data,
-            mimeType: imageData.inlineData.mimeType
         }
-    });
+
+        const result = await ai.models.generateContent({ model: 'gemini-2.5-flash-image-preview', contents });
+        const imageData = result?.candidates?.[0]?.content?.parts?.find(part => part.inlineData);
+        if (!imageData) return res.status(502).json({ error: 'No image returned' });
+        res.json({ success: true, image: { data: imageData.inlineData.data, mimeType: imageData.inlineData.mimeType } });
+    } catch (err) {
+        console.error('compose failed', err);
+        res.status(500).json({ error: 'Compose failed' });
+    } finally {
+        try { (req.files || []).forEach(f => { if (fs.existsSync(f.path)) fs.unlinkSync(f.path); }); } catch (_) {}
+    }
 });
 
 const dataFile = path.join(__dirname, 'data/saved_config.json');
