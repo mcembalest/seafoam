@@ -6,6 +6,33 @@ import { openTextEditor } from './textEditor.js';
 import { openImageEditor } from './imageEditor.js';
 import { updateSlotsUsing } from './composition.js';
 
+// Utility functions for formatting
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function formatDate(timestamp) {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffInMs = now - date;
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+  if (diffInDays === 0) {
+    // Today - show time
+    return `Today at ${date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
+  } else if (diffInDays === 1) {
+    return 'Yesterday';
+  } else if (diffInDays < 7) {
+    return `${diffInDays} days ago`;
+  } else {
+    return date.toLocaleDateString();
+  }
+}
+
 export function initFilesystem() {
   renderSavedItems();
   subscribe('savedData:change', renderSavedItems);
@@ -106,11 +133,22 @@ function renderSavedItems() {
     textsList.classList.remove('saved-grid');
     imagesGrid.innerHTML = `
       <div class="list-section">
+        <div class="list-header">
+          <div class="row-thumb"></div>
+          <div class="row-name">Name</div>
+          <div class="row-date">Date Added</div>
+          <div class="row-size">Size</div>
+          <div class="row-kind">Kind</div>
+          <div class="row-actions"></div>
+        </div>
         <div class="list-rows">
           ${state.savedData.images.map(img => `
             <div class="list-row" draggable="true" data-id="${img.id}" data-type="image">
               <div class="row-thumb"><img loading="lazy" decoding="async" src="data:${img.mimeType};base64,${img.data}" alt="Saved"></div>
               <div class="row-name" title="${img.name || ''}">${img.name || ''}</div>
+              <div class="row-date">${formatDate(img.createdAt || Date.now())}</div>
+              <div class="row-size">${formatFileSize(img.size || 0)}</div>
+              <div class="row-kind">Image</div>
               <div class="row-actions"><button class="icon-btn delete-btn" title="Delete" data-type="image" data-id="${img.id}">✕</button></div>
             </div>
           `).join('')}
@@ -118,11 +156,22 @@ function renderSavedItems() {
       </div>`;
     textsList.innerHTML = `
       <div class="list-section">
+        <div class="list-header">
+          <div class="row-thumb"></div>
+          <div class="row-name">Name</div>
+          <div class="row-date">Date Added</div>
+          <div class="row-size">Size</div>
+          <div class="row-kind">Kind</div>
+          <div class="row-actions"></div>
+        </div>
         <div class="list-rows">
           ${state.savedData.texts.map(txt => `
             <div class="list-row" draggable="true" data-id="${txt.id}" data-type="text">
               <div class="row-thumb text">📄</div>
               <div class="row-name" title="${txt.name || ''}">${txt.name || ''}</div>
+              <div class="row-date">${formatDate(txt.createdAt || Date.now())}</div>
+              <div class="row-size">${txt.size || 0} chars</div>
+              <div class="row-kind">Text</div>
               <div class="row-actions"><button class="icon-btn delete-btn" title="Delete" data-type="text" data-id="${txt.id}">✕</button></div>
             </div>
           `).join('')}
@@ -143,6 +192,16 @@ function setupDelegatedDeletion() {
     e.stopPropagation();
     const id = btn.getAttribute('data-id');
     const type = btn.getAttribute('data-type');
+
+    // Get the item name for the confirmation message
+    const itemName = type === 'image'
+      ? state.savedData.images.find(i => i.id === id)?.name || 'this image'
+      : state.savedData.texts.find(t => t.id === id)?.name || 'this text';
+
+    // Show confirmation dialog
+    const confirmed = confirm(`Are you sure you want to delete "${itemName}"? This action cannot be undone.`);
+    if (!confirmed) return;
+
     try {
       if (type === 'image') {
         await deleteImage(id);

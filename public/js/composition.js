@@ -41,8 +41,23 @@ function setupActions() {
 }
 
 function setupDragAndDrop() {
+  // Handle slot remove buttons
+  document.addEventListener('click', (e) => {
+    const removeBtn = e.target.closest('.slot-remove-btn');
+    if (removeBtn) {
+      e.stopPropagation();
+      const slotIndex = parseInt(removeBtn.dataset.slot);
+      setCompositionImage(slotIndex, null);
+      const slotEl = document.querySelector(`.image-slot[data-slot="${slotIndex}"]`);
+      if (slotEl) {
+        slotEl.innerHTML = '<span>Drop image here</span>';
+        slotEl.classList.remove('filled');
+      }
+    }
+  });
+
   document.addEventListener('dragstart', (e) => {
-    if (e.target.closest('.icon-btn')) {
+    if (e.target.closest('.icon-btn') || e.target.closest('.slot-remove-btn')) {
       e.preventDefault();
       return;
     }
@@ -68,17 +83,15 @@ function setupDragAndDrop() {
         if (img) {
           const slotIndex = parseInt(slot.dataset.slot);
           setCompositionImage(slotIndex, img);
-          slot.innerHTML = `<img src="data:${img.mimeType};base64,${img.data}" alt="Composition">`;
+          slot.innerHTML = `
+            <img src="data:${img.mimeType};base64,${img.data}" alt="Composition">
+            <button class="slot-remove-btn" title="Remove image" data-slot="${slotIndex}">×</button>
+          `;
           slot.classList.add('filled');
         }
       }
     };
-    slot.ondblclick = () => {
-      const slotIndex = parseInt(slot.dataset.slot);
-      setCompositionImage(slotIndex, null);
-      slot.innerHTML = '<span>Drop image here</span>';
-      slot.classList.remove('filled');
-    };
+    // Removed double-click handler - now using 'x' button
   });
 
   const textArea = document.getElementById('composition-text');
@@ -120,7 +133,13 @@ function setupSlotClickUpload() {
       state.savedData.images.push(newImage);
       setCompositionImage(activeSlotIndex, newImage);
       const slotEl = document.querySelector(`.image-slot[data-slot="${activeSlotIndex}"]`);
-      if (slotEl) { slotEl.innerHTML = `<img src="data:${newImage.mimeType};base64,${newImage.data}" alt="Composition">`; slotEl.classList.add('filled'); }
+      if (slotEl) {
+        slotEl.innerHTML = `
+          <img src="data:${newImage.mimeType};base64,${newImage.data}" alt="Composition">
+          <button class="slot-remove-btn" title="Remove image" data-slot="${activeSlotIndex}">×</button>
+        `;
+        slotEl.classList.add('filled');
+      }
       activeSlotIndex = null;
       e.target.value = '';
     };
@@ -164,7 +183,10 @@ export function updateSlotsUsing(imageId) {
   document.querySelectorAll('.image-slot').forEach((slot, idx) => {
     const current = state.compositionImages[idx];
     if (current && current.id === imageId) {
-      slot.innerHTML = `<img src="data:${current.mimeType};base64,${current.data}" alt="Composition">`;
+      slot.innerHTML = `
+        <img src="data:${current.mimeType};base64,${current.data}" alt="Composition">
+        <button class="slot-remove-btn" title="Remove image" data-slot="${idx}">×</button>
+      `;
       slot.classList.add('filled');
     }
   });
