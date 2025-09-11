@@ -79,26 +79,26 @@
       "right": "1fr",
       "cards": {
         "composition": {
-          "x": 538,
-          "y": -112,
+          "x": 609,
+          "y": 9,
           "w": 932,
           "h": 471
         },
         "output": {
-          "x": -14,
-          "y": -53,
+          "x": 58,
+          "y": -9,
           "w": 514,
           "h": 566
         }
       }
     },
     "view": {
-      "imagesMode": "list",
+      "imagesMode": "grid",
       "imagesSort": {
         "field": "createdAt",
         "dir": "desc"
       },
-      "textsMode": "list",
+      "textsMode": "grid",
       "textsSort": {
         "field": "createdAt",
         "dir": "desc"
