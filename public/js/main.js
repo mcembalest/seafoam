@@ -1,74 +1,18 @@
-// Seafoama frontend
+// Seafoam frontend code
 
-import { getSaved } from './libraryAPI.js';
-import { getUiConfig } from '../gOS/api/uiConfig.js';
-import { setUiConfigState } from '../gOS/state/uiState.js';
-import { setSavedData } from './state.js';
-import { startStatusPolling } from '../gOS/status.js';
+import { getSaved, getUiConfig } from './api.js';
+import { setSavedData, setUiConfig } from './state.js';
+import { startStatusPolling } from './status.js';
 import { initFilesystem } from './filesystem.js';
-import { initComposition } from './composer.js';
+import { initComposition } from './composition.js';
 import { initLayout } from './layout.js';
 
-/**
- * App bootstrap: initialize platform UI config + status, then load Seafoam data and modules.
- */
 async function bootstrap() {
-  migrateLocalStorageKeys();
   try {
-    // Pre-apply cached UI to reduce CLS before network
-    try {
-      const savedHeight = localStorage.getItem('libraryHeight') || localStorage.getItem('savedPanelHeight');
-      if (savedHeight) document.documentElement.style.setProperty('--library-height', savedHeight);
-      const cards = JSON.parse(localStorage.getItem('cardsLayout') || 'null');
-      if (cards) {
-        const r = document.documentElement.style;
-        const pick = (v, d) => (typeof v === 'number' && !Number.isNaN(v) ? v : d);
-        const cIn = cards.composition || {}; const oIn = cards.output || {};
-        r.setProperty('--comp-x', pick(cIn.x, 40) + 'px');
-        r.setProperty('--comp-y', pick(cIn.y, 120) + 'px');
-        r.setProperty('--comp-w', pick(cIn.w, 460) + 'px');
-        r.setProperty('--comp-h', pick(cIn.h, 360) + 'px');
-        r.setProperty('--out-x', pick(oIn.x, 560) + 'px');
-        r.setProperty('--out-y', pick(oIn.y, 120) + 'px');
-        r.setProperty('--out-w', pick(oIn.w, 520) + 'px');
-        r.setProperty('--out-h', pick(oIn.h, 420) + 'px');
-      }
-    } catch (_) {}
-
     const cfg = await getUiConfig();
-    setUiConfigState(cfg);
-    // Pre-size cards via CSS variables to avoid CLS before JS layouts
-    try {
-      const cards = (cfg && cfg.layout && cfg.layout.cards) || {};
-      const pick = (v, d) => (typeof v === 'number' && !Number.isNaN(v) ? v : d);
-      const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
-      const cIn = cards.composition || {};
-      const oIn = cards.output || {};
-      const headerPad = 120;
-      const c = {
-        x: clamp(pick(cIn.x, 40), 12, Math.max(12, window.innerWidth - pick(cIn.w, 460) - 16)),
-        y: clamp(pick(cIn.y, 120), headerPad, Math.max(headerPad, window.innerHeight - pick(cIn.h, 360) - 24)),
-        w: Math.max(320, pick(cIn.w, 460)),
-        h: Math.max(240, pick(cIn.h, 360))
-      };
-      const o = {
-        x: clamp(pick(oIn.x, 560), 12, Math.max(12, window.innerWidth - pick(oIn.w, 520) - 16)),
-        y: clamp(pick(oIn.y, 120), headerPad, Math.max(headerPad, window.innerHeight - pick(oIn.h, 420) - 24)),
-        w: Math.max(320, pick(oIn.w, 520)),
-        h: Math.max(240, pick(oIn.h, 420))
-      };
-      const r = document.documentElement.style;
-      r.setProperty('--comp-x', (c.x) + 'px');
-      r.setProperty('--comp-y', (c.y) + 'px');
-      r.setProperty('--comp-w', (c.w) + 'px');
-      r.setProperty('--comp-h', (c.h) + 'px');
-      r.setProperty('--out-x', (o.x) + 'px');
-      r.setProperty('--out-y', (o.y) + 'px');
-      r.setProperty('--out-w', (o.w) + 'px');
-      r.setProperty('--out-h', (o.h) + 'px');
-    } catch (_) {}
+    setUiConfig(cfg);
     if (cfg?.panel?.height) {
-      document.documentElement.style.setProperty('--library-height', cfg.panel.height);
+      document.documentElement.style.setProperty('--saved-panel-height', cfg.panel.height);
     }
     if (cfg?.background?.url) {
       document.documentElement.style.setProperty('--app-bg-url', `url('${cfg.background.url}')`);
@@ -83,30 +27,7 @@ async function bootstrap() {
   initFilesystem();
   initComposition();
   initLayout();
-  const pill = document.getElementById('server-status');
-  startStatusPolling({ pillEl: pill, intervalMs: 10000 });
+  startStatusPolling(10000);
 }
 
 document.addEventListener('DOMContentLoaded', bootstrap);
-
-/**
- * Migrate legacy localStorage keys to new names. (CAN WE REMOVE THIS?)
- */
-function migrateLocalStorageKeys() {
-  try {
-    const legacyOpen = localStorage.getItem('savedPanelOpen');
-    const modernOpen = localStorage.getItem('libraryOpen');
-    if (legacyOpen !== null && modernOpen === null) {
-      localStorage.setItem('libraryOpen', legacyOpen);
-      localStorage.removeItem('savedPanelOpen');
-    }
-    const legacyHeight = localStorage.getItem('savedPanelHeight');
-    const modernHeight = localStorage.getItem('libraryHeight');
-    if (legacyHeight !== null && modernHeight === null) {
-      localStorage.setItem('libraryHeight', legacyHeight);
-      localStorage.removeItem('savedPanelHeight');
-    }
-    const legacyCards = localStorage.getItem('cardsLayout');
-    // keep as-is; name is already neutral
-  } catch (_) {}
-}

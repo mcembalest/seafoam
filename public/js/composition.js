@@ -1,22 +1,14 @@
-// Image composer card component
+// Composition of layout components
 
 import { state, setCompositionImage, setSavedData } from './state.js';
-import { saveImage, getSaved } from './libraryAPI.js';
-import { readAsBase64 } from '../gOS/files.js';
-import { getDropPayload, enableDropTarget } from '../gOS/dnd.js';
+import { saveImage, getSaved } from './api.js';
 
-/**
- * [Seafoam] Initialize composer interactions: DnD, slot uploads, actions.
- */
 export function initComposition() {
   setupDragAndDrop();
   setupSlotClickUpload();
   setupActions();
 }
 
-/**
- * [Seafoam] Wire composer action buttons (preview, generate, save/download).
- */
 function setupActions() {
   const previewBtn = document.getElementById('preview-btn');
   const generateBtn = document.getElementById('generate-btn');
@@ -48,110 +40,71 @@ function setupActions() {
   };
 }
 
-/**
- * [Seafoam] Enable drag/drop onto image slots and text area.
- */
 function setupDragAndDrop() {
-  // Handle slot remove buttons
-  document.addEventListener('click', (e) => {
-    const removeBtn = e.target.closest('.slot-remove-btn');
-    if (removeBtn) {
+  document.addEventListener('dragstart', (e) => {
+    if (e.target.closest('.icon-btn')) {
       e.preventDefault();
-      e.stopPropagation();
-      const slotIndex = parseInt(removeBtn.dataset.slot);
-      setCompositionImage(slotIndex, null);
-      const slotEl = document.querySelector(`.image-slot[data-slot="${slotIndex}"]`);
-      if (slotEl) {
-        slotEl.innerHTML = '<span>Image</span>';
-        slotEl.classList.remove('filled');
-      }
+      return;
+    }
+    const dragEl = e.target.closest('.saved-item, .saved-text-item, .saved-tile, .list-row');
+    if (dragEl) {
+      e.dataTransfer.setData('text/plain', JSON.stringify({
+        id: dragEl.dataset.id,
+        type: dragEl.dataset.type
+      }));
     }
   });
 
-  // Drag payloads for library items are set via platform delegated drag in the library panel.
-
   const slots = document.querySelectorAll('.image-slot');
   slots.forEach(slot => {
-    // Click upload wiring is handled in setupSlotClickUpload
     slot.ondragover = (e) => { e.preventDefault(); slot.classList.add('dragover'); };
     slot.ondragleave = () => { slot.classList.remove('dragover'); };
-    slot.ondrop = async (e) => {
+    slot.ondrop = (e) => {
       e.preventDefault();
       slot.classList.remove('dragover');
-
-      // If a file is dropped from the OS, handle upload directly
-      const files = e.dataTransfer && e.dataTransfer.files;
-      if (files && files.length > 0) {
-        const file = files[0];
-        const slotIndex = parseInt(slot.dataset.slot);
-        try {
-          const base64 = await readAsBase64(file);
-          const resp = await fetch('/api/save-image', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ data: base64, mimeType: file.type, name: file.name.replace(/\.[^/.]+$/, '') })
-          });
-          const { id } = await resp.json();
-          const newImage = { id, data: base64, mimeType: file.type, name: file.name.replace(/\.[^/.]+$/, '') };
-          state.savedData.images.push(newImage);
-          setCompositionImage(slotIndex, newImage);
-          slot.innerHTML = `
-            <img width="256" height="256" src="data:${newImage.mimeType};base64,${newImage.data}" alt="Composition">
-            <button class="slot-remove-btn" title="Remove image" data-slot="${slotIndex}">×</button>
-          `;
-          slot.classList.add('filled');
-        } catch (_) {}
-        return;
-      }
-
-      // Otherwise, attempt to parse internal drag payload
-      const data = getDropPayload(e);
-      if (!data) return;
+      const data = JSON.parse(e.dataTransfer.getData('text/plain'));
       if (data.type === 'image') {
         const img = state.savedData.images.find(i => i.id === data.id);
         if (img) {
           const slotIndex = parseInt(slot.dataset.slot);
           setCompositionImage(slotIndex, img);
-          slot.innerHTML = `
-            <img width="256" height="256" src="data:${img.mimeType};base64,${img.data}" alt="Composition">
-            <button class="slot-remove-btn" title="Remove image" data-slot="${slotIndex}">×</button>
-          `;
+          slot.innerHTML = `<img src="data:${img.mimeType};base64,${img.data}" alt="Composition">`;
           slot.classList.add('filled');
         }
       }
     };
-    // Removed double-click handler - now using 'x' button
+    slot.ondblclick = () => {
+      const slotIndex = parseInt(slot.dataset.slot);
+      setCompositionImage(slotIndex, null);
+      slot.innerHTML = '<span>Drop image here</span>';
+      slot.classList.remove('filled');
+    };
   });
 
   const textArea = document.getElementById('composition-text');
   if (textArea) {
-    enableDropTarget({
-      targetEl: textArea,
-      onDrop: (data, ev) => {
-        // Ignore OS file drops in the text area
-        const files = ev.dataTransfer && ev.dataTransfer.files;
-        if (files && files.length > 0) return;
-        if (data && data.type === 'text') {
-          const text = state.savedData.texts.find(t => t.id === data.id);
-          if (text) {
-            const currentText = textArea.value;
-            const insert = text.name ? `[${text.name}]` : text.text;
-            textArea.value = currentText ? `${currentText} ${insert}` : insert;
-          }
+    textArea.ondragover = (e) => e.preventDefault();
+    textArea.ondrop = (e) => {
+      e.preventDefault();
+      const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+      if (data.type === 'text') {
+        const text = state.savedData.texts.find(t => t.id === data.id);
+        if (text) {
+          const currentText = textArea.value;
+          const insert = text.name ? `[${text.name}]` : text.text;
+          textArea.value = currentText ? `${currentText} ${insert}` : insert;
         }
       }
-    });
+    };
   }
 }
 
-/**
- * [Seafoam] Clicking a slot opens file input to add image to that slot.
- */
 function setupSlotClickUpload() {
   const slotFileInput = document.getElementById('slot-file-input');
   const slots = document.querySelectorAll('.image-slot');
   let activeSlotIndex = null;
   slots.forEach(slot => {
-    slot.onclick = (e) => { if (e && e.target && e.target.closest && e.target.closest('.slot-remove-btn')) return; activeSlotIndex = parseInt(slot.dataset.slot); slotFileInput?.click(); };
+    slot.onclick = () => { activeSlotIndex = parseInt(slot.dataset.slot); slotFileInput?.click(); };
   });
   if (slotFileInput) {
     slotFileInput.onchange = async (e) => {
@@ -167,22 +120,13 @@ function setupSlotClickUpload() {
       state.savedData.images.push(newImage);
       setCompositionImage(activeSlotIndex, newImage);
       const slotEl = document.querySelector(`.image-slot[data-slot="${activeSlotIndex}"]`);
-      if (slotEl) {
-        slotEl.innerHTML = `
-          <img width="256" height="256" src="data:${newImage.mimeType};base64,${newImage.data}" alt="Composition">
-          <button class="slot-remove-btn" title="Remove image" data-slot="${activeSlotIndex}">×</button>
-        `;
-        slotEl.classList.add('filled');
-      }
+      if (slotEl) { slotEl.innerHTML = `<img src="data:${newImage.mimeType};base64,${newImage.data}" alt="Composition">`; slotEl.classList.add('filled'); }
       activeSlotIndex = null;
       e.target.value = '';
     };
   }
 }
 
-/**
- * [Seafoam] Show Gemini request preview modal.
- */
 export function showPreview() {
   const rawText = document.getElementById('composition-text').value;
   const expandedText = expandSnippetNames(rawText);
@@ -194,9 +138,6 @@ export function showPreview() {
   document.getElementById('preview-modal').style.display = 'flex';
 }
 
-/**
- * [Seafoam] Call backend compose to generate an image and display it.
- */
 export async function generate() {
   const rawText = document.getElementById('composition-text').value;
   const text = expandSnippetNames(rawText);
@@ -219,26 +160,16 @@ export async function generate() {
   setLoading('generate-btn', false);
 }
 
-/**
- * [Seafoam] Refresh any slots that reference a given saved image id.
- * @param {string} imageId
- */
 export function updateSlotsUsing(imageId) {
   document.querySelectorAll('.image-slot').forEach((slot, idx) => {
     const current = state.compositionImages[idx];
     if (current && current.id === imageId) {
-      slot.innerHTML = `
-        <img width="256" height="256" src="data:${current.mimeType};base64,${current.data}" alt="Composition">
-        <button class="slot-remove-btn" title="Remove image" data-slot="${idx}">×</button>
-      `;
+      slot.innerHTML = `<img src="data:${current.mimeType};base64,${current.data}" alt="Composition">`;
       slot.classList.add('filled');
     }
   });
 }
 
-/**
- * [Seafoam] Display generated image in the output card.
- */
 function displayImage(imageData) {
   const img = document.getElementById('generated-image');
   img.src = `data:${imageData.mimeType};base64,${imageData.data}`;
@@ -246,9 +177,6 @@ function displayImage(imageData) {
   document.getElementById('image-result').style.display = 'block';
 }
 
-/**
- * [Seafoam] Toggle loading state for a button with text/spinner children.
- */
 function setLoading(buttonId, loading) {
   const btn = document.getElementById(buttonId);
   btn.disabled = loading;
@@ -256,9 +184,6 @@ function setLoading(buttonId, loading) {
   btn.querySelector('.btn-loading').style.display = loading ? 'flex' : 'none';
 }
 
-/**
- * [Seafoam] Build a preview request payload for Gemini image preview model.
- */
 function buildGeminiRequestPreview(text, images) {
   const contents = [text];
   for (const img of images) {
@@ -268,12 +193,18 @@ function buildGeminiRequestPreview(text, images) {
   return { model: 'gemini-2.5-flash-image-preview', contents };
 }
 
-/**
- * [Seafoam] Expand [name] references using saved text snippets by name.
- */
 function expandSnippetNames(input) {
   return input.replace(/\[(.+?)\]/g, (match, name) => {
     const found = state.savedData.texts.find(t => (t.name || '').toLowerCase() === name.toLowerCase());
     return found ? found.text : match;
+  });
+}
+
+function readAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
   });
 }
