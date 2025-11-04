@@ -43,7 +43,7 @@ app.post('/api/compose', upload.array('images'), async (req, res) => {
     }
 
     const result = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image-preview',
+        model: 'gemini-2.5-flash-image',
         contents
     });
     
