@@ -20,5 +20,3 @@ Seafoam lets you:
 4. Place your API key in `.env.template` and rename the env file to `.env`
 5. Start the app with `npm run dev`
 6. Open `localhost:3000` in your browser
-
-^ [Bun](https://bun.com/docs) is another option for a package manager + runtime
