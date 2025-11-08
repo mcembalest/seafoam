@@ -145,45 +145,92 @@ For a simple image generation app, the scanner produces:
 }
 ```
 
-## Path Finding (Future)
+## Navigation System (Python)
 
-The graph enables queries like:
+The scanner includes an AI-powered navigation system that uses the scanned graph to provide step-by-step guidance to users.
 
-```typescript
-// "How do I save an image?"
-const guidance = findPath(graph, currentState, "image_saved");
+### Quick Start
 
-// Returns:
-{
-  steps: [
-    { state: "ready_to_generate", action: "generate_image" },
-    { state: "generate_completed", action: "save_image" }
-  ],
-  descriptions: [
-    "1. Click the Generate button",
-    "2. Click the Save button"
-  ]
-}
+```bash
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Run interactive guide
+python guide.py seafoam-graph.json
 ```
+
+### Interactive Guide
+
+The guide provides a conversational interface for navigating applications:
+
+```
+You: How do I save an image?
+Guide: To save an image in this application:
+
+1. Click the Generate button
+2. Click the Save button
+3. Enter a name for your image
+
+You'll end up in: image saved to library
+```
+
+### Features
+
+- **Path Finding**: Finds shortest path from current state to goal
+- **Action Search**: Search available actions by keyword
+- **State Identification**: Identifies current state from user description
+- **Context Awareness**: Remembers conversation history
+
+### Programmatic Usage
+
+```python
+from claude_agent_sdk import query, ClaudeAgentOptions
+from navigation import create_navigation_server
+
+# Load navigation server
+nav_server = create_navigation_server('seafoam-graph.json')
+
+# Configure with navigation tools
+options = ClaudeAgentOptions(
+    mcp_servers={"nav": nav_server},
+    allowed_tools=["mcp__nav__find_path", "mcp__nav__search_actions"]
+)
+
+# Ask questions
+async for message in query(
+    prompt="How do I save an image?",
+    options=options
+):
+    print(message)
+```
+
+### Available Tools
+
+- `find_path`: Find step-by-step instructions from current state to goal
+- `search_actions`: Search for actions by keyword
+- `identify_state`: Identify current state from description
+- `list_states`: List all available states
+
+### Examples
+
+See `examples/simple_navigation.py` for complete examples.
 
 ## Architecture
 
 ```
 state-graph-scanner/
-├── src/
+├── src/                      # TypeScript scanner
 │   ├── types.ts              # Core type definitions
 │   ├── scanner.ts            # Main orchestrator
-│   ├── extractors/
-│   │   ├── ast-extractor.ts      # JavaScript/TypeScript parsing
-│   │   ├── html-extractor.ts     # HTML parsing
-│   │   └── structure-extractor.ts # Coordinator
-│   ├── synthesizers/
-│   │   ├── state-identifier.ts   # State discovery
-│   │   ├── action-extractor.ts   # Action extraction
-│   │   └── transition-builder.ts # Graph construction
-│   └── labeler/
-│       └── semantic-labeler.ts   # Label enrichment
-└── cli.ts                    # Command-line interface
+│   ├── extractors/           # Code parsers
+│   ├── synthesizers/         # State/action identification
+│   └── labeler/              # Semantic enrichment
+├── navigation/               # Python navigation system
+│   ├── pathfinder.py         # Graph search algorithms
+│   ├── tools.py              # MCP tool definitions
+│   └── server.py             # MCP server setup
+├── guide.py                  # Interactive guide CLI
+└── examples/                 # Usage examples
 ```
 
 ## Design Principles
@@ -196,12 +243,19 @@ state-graph-scanner/
 
 ## Future Enhancements
 
+### Scanner Improvements
 - [ ] Dynamic tracing (instrument apps to record actual state transitions)
 - [ ] LLM-based labeling (use language models for richer semantic descriptions)
-- [ ] Confidence scoring (measure reliability of extracted states/actions)
+- [ ] State deduplication (merge similar states)
+- [ ] Confidence filtering (remove low-confidence states/transitions)
 - [ ] Manual annotation support (allow users to refine the graph)
-- [ ] Path finding algorithms (Dijkstra, A* for goal-oriented navigation)
-- [ ] Query interface (natural language → action sequences)
+
+### Navigation Enhancements
+- [x] Path finding algorithms (BFS for shortest paths)
+- [x] Query interface (natural language → action sequences)
+- [ ] Visual graph explorer (web UI for browsing the graph)
+- [ ] Multi-modal state detection (use screenshots + graph)
+- [ ] Learning from user interactions (improve paths based on usage)
 
 ## Testing
 

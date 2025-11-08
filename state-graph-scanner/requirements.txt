@@ -1,0 +1,6 @@
+# Claude Agent SDK for Python
+claude-agent-sdk>=0.1.0
+
+# Optional: For better terminal experience
+prompt-toolkit>=3.0.0
+rich>=13.0.0
