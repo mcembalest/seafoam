@@ -1,6 +1,6 @@
 # State-Action Graph Scanner
 
-A framework-agnostic utility that extracts state-action graphs from interactive systems (web apps, mobile apps, etc.) to enable step-by-step user guidance and navigation.
+A framework-agnostic utility that extracts state-action graphs from interactive systems (web apps, mobile apps, etc.) to enable AI-powered step-by-step user guidance and navigation.
 
 ## Overview
 
@@ -8,6 +8,11 @@ This scanner analyzes source code to discover:
 - **States**: Discrete configurations of the system (e.g., "modal open", "data loaded")
 - **Actions**: User interactions that trigger state changes (e.g., "click save button")
 - **Transitions**: Valid paths between states via actions
+
+The system includes:
+- **Scanner**: Static analysis to extract raw graph from code
+- **Refiner**: AI-powered deduplication and consolidation
+- **Navigator**: Natural language query interface for user guidance
 
 The resulting graph enables:
 - Natural language query → action sequence mapping
@@ -59,20 +64,39 @@ type Transition = {
 
 ```bash
 cd state-graph-scanner
+
+# Install JavaScript dependencies (for scanner)
 npm install
 npm run build
+
+# Install Python dependencies (for refinement and navigation)
+pip install -r requirements.txt
 ```
 
-## Usage
+## Quick Start
 
-### Command Line
+### Complete Workflow (Scan + Refine)
 
 ```bash
-# Scan an application
-npm run scan -- /path/to/app
+# Scan and refine in one command
+./scan-and-refine.sh /path/to/app my-app
 
-# Specify output file
-npm run scan -- /path/to/app --output my-graph.json
+# Results:
+#   my-app-raw.json      - Raw scanned graph (100+ states)
+#   my-app-refined.json  - AI-refined graph (15-25 states)
+```
+
+### Individual Steps
+
+```bash
+# Step 1: Scan application
+npm run scan -- /path/to/app --output raw-graph.json
+
+# Step 2: Refine with AI (removes duplicates, consolidates states)
+python refine.py raw-graph.json --output refined-graph.json --auto
+
+# Step 3: Use for navigation
+python guide.py refined-graph.json
 ```
 
 ### Programmatic
@@ -89,24 +113,32 @@ const result = await scan('/path/to/app');
 
 ## How It Works
 
-### 1. Extraction Phase
-Scans source code to extract:
+### Phase 1: Scanning (TypeScript)
+Static code analysis extracts raw structure:
 - Event handlers (`addEventListener`, `onClick`, etc.)
 - State variables (stores, context, global state)
 - UI elements (buttons, forms, modals)
 - API endpoints
+- Synthesizes states, actions, and transitions
+- Adds semantic labels for searchability
 
-### 2. Synthesis Phase
-Identifies states and actions:
-- **States**: Inferred from modals, data presence, button enablement
-- **Actions**: Extracted from event handlers, buttons, API calls
-- **Transitions**: Connected by matching action semantics with state conditions
+**Output**: Raw graph with 100+ states (includes duplicates and internal details)
 
-### 3. Labeling Phase
-Enriches graph with semantic labels:
-- Adds natural language variations
-- Generates question forms ("how do I...")
-- Creates searchable descriptions
+### Phase 2: Refinement (Python + Claude SDK)
+AI-powered graph consolidation:
+- **Duplicate detection**: Identifies states representing the same UI element
+- **Merging**: Consolidates duplicate states (e.g., multiple modal selectors → one modal state)
+- **Pruning**: Removes internal implementation details
+- **Relabeling**: Improves clarity of state names
+
+**Output**: Refined graph with 15-25 high-level user-facing states
+
+### Phase 3: Navigation (Python + Claude SDK)
+Natural language query interface:
+- Pathfinding algorithms (BFS for shortest routes)
+- Action search and discovery
+- Multi-turn conversational guidance
+- Context-aware help
 
 ## Example Output
 
