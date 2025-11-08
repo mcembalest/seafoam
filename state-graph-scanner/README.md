@@ -95,7 +95,10 @@ npm run scan -- /path/to/app --output raw-graph.json
 # Step 2: Refine with AI (removes duplicates, consolidates states)
 python refine.py raw-graph.json --output refined-graph.json --auto
 
-# Step 3: Use for navigation
+# Step 3: Visualize the graph (optional but recommended)
+python visualize.py refined-graph.json --open
+
+# Step 4: Use for navigation
 python guide.py refined-graph.json
 ```
 
@@ -247,6 +250,43 @@ async for message in query(
 
 See `examples/simple_navigation.py` for complete examples.
 
+## Graph Visualization
+
+Interactive web-based graph explorer for visualizing state-action graphs.
+
+### Quick Start
+
+```bash
+# Generate visualization
+python visualize.py refined-graph.json --open
+```
+
+### Features
+
+- **Interactive Network**: Zoom, pan, explore the graph visually
+- **Color-Coded States**: Different colors for modals, ready states, data states
+- **Search & Filter**: Find specific states or filter by category
+- **Node Details**: Click states/transitions for detailed information
+- **Physics Simulation**: Automatic graph layout
+- **Standalone**: Generated HTML can be shared or hosted
+
+### Example
+
+```bash
+# Complete workflow with visualization
+./scan-and-refine.sh /path/to/app my-app
+python visualize.py my-app-refined.json --output viz --open
+```
+
+**Color Legend:**
+- 🟣 Purple: Initial state
+- 🔵 Blue: Modal states
+- 🟢 Green: Ready states
+- 🟠 Orange: Data states
+- ⚫ Gray: Other states
+
+For detailed documentation, see [VISUALIZATION.md](VISUALIZATION.md).
+
 ## Architecture
 
 ```
@@ -257,11 +297,19 @@ state-graph-scanner/
 │   ├── extractors/           # Code parsers
 │   ├── synthesizers/         # State/action identification
 │   └── labeler/              # Semantic enrichment
+├── refinement/               # Python graph refinement
+│   ├── graph_refiner.py      # Deduplication logic
+│   ├── tools.py              # MCP refinement tools
+│   └── server.py             # MCP server setup
 ├── navigation/               # Python navigation system
 │   ├── pathfinder.py         # Graph search algorithms
-│   ├── tools.py              # MCP tool definitions
+│   ├── tools.py              # MCP navigation tools
 │   └── server.py             # MCP server setup
-├── guide.py                  # Interactive guide CLI
+├── visualization/            # Web-based graph explorer
+│   └── viewer.html           # Interactive HTML viewer
+├── refine.py                 # Graph refinement CLI
+├── guide.py                  # Navigation guide CLI
+├── visualize.py              # Visualization generator CLI
 └── examples/                 # Usage examples
 ```
 
@@ -285,9 +333,16 @@ state-graph-scanner/
 ### Navigation Enhancements
 - [x] Path finding algorithms (BFS for shortest paths)
 - [x] Query interface (natural language → action sequences)
-- [ ] Visual graph explorer (web UI for browsing the graph)
+- [x] Visual graph explorer (web UI for browsing the graph)
 - [ ] Multi-modal state detection (use screenshots + graph)
 - [ ] Learning from user interactions (improve paths based on usage)
+
+### Refinement Enhancements
+- [x] AI-powered deduplication
+- [x] State merging and consolidation
+- [x] Low-value state removal
+- [ ] Automatic quality assessment
+- [ ] Learning refinement patterns from manual edits
 
 ## Testing
 
