@@ -6,7 +6,7 @@
 
 Seafoam lets you:
 
-1. Combine text instructions and sample pictures into a single output image (uses Nano Banana, AKA Gemini 2.5 Flash, grom Google)
+1. Combine text instructions and sample pictures into a single output image (uses Nano Banana, AKA Gemini 2.5 Flash, from Google)
 
 2. Save images and instructions for later use in a workspace in your browser
 
